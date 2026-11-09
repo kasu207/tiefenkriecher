@@ -1,0 +1,2657 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#07060c">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tiefenkriecher">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png">
+<title>Tiefenkriecher</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;background:#07060c;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden;touch-action:manipulation;overscroll-behavior:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);max-width:520px;margin:0 auto}
+#hud{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#12101c;border-bottom:2px solid #2a2440;font-size:13px}
+#hudfloor{flex:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ffe23a}
+#hudmoney{font-variant-numeric:tabular-nums}
+#hudmenu{background:#2a2440;color:#fff;border:0;border-radius:8px;padding:6px 10px;font-size:13px}
+#stage{position:relative;flex:1;min-height:0}
+#view{display:block;image-rendering:pixelated}
+#pad{height:190px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px 12px;background:linear-gradient(#12101c,#0a0910)}
+.dpad{position:relative;width:162px;height:162px}
+.dpad div{position:absolute;width:56px;height:56px;background:#2a2440;border-radius:10px;box-shadow:0 4px 0 #15122a}
+.dpad div.down{background:#4a4070;transform:translateY(2px);box-shadow:0 2px 0 #15122a}
+.dpad [data-d="0"]{left:53px;top:0}.dpad [data-d="2"]{left:53px;bottom:0}.dpad [data-d="3"]{left:0;top:53px}.dpad [data-d="1"]{right:0;top:53px}
+.dpad div::after{content:"";position:absolute;left:50%;top:50%;border:9px solid transparent;transform:translate(-50%,-50%)}
+.dpad [data-d="0"]::after{border-bottom-color:#9a90c0;margin-top:-5px}.dpad [data-d="2"]::after{border-top-color:#9a90c0;margin-top:5px}
+.dpad [data-d="3"]::after{border-right-color:#9a90c0;margin-left:-5px}.dpad [data-d="1"]::after{border-left-color:#9a90c0;margin-left:5px}
+.abtn{display:flex;gap:16px;align-items:center}
+.abtn div{width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;box-shadow:0 5px 0 rgba(0,0,0,.5)}
+.abtn div:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.5)}
+#ba{background:#d23c5a;margin-top:-34px}#bb{background:#3c6ad2;margin-top:34px}
+#dlg{position:absolute;left:8px;right:8px;bottom:calc(198px + env(safe-area-inset-bottom));background:#f4f1ff;color:#16121c;border:3px solid #16121c;border-radius:10px;padding:12px 14px 14px;font-size:16px;line-height:1.35;min-height:84px;display:none;z-index:60;box-shadow:0 6px 0 rgba(0,0,0,.4)}
+#dlg.on{display:block}
+#dlgwho{position:absolute;top:-14px;left:12px;background:#16121c;color:#ffe23a;font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:6px}
+#dlg::after{content:"";position:absolute;right:12px;bottom:8px;border:6px solid transparent;border-top-color:#16121c;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0}}
+#battle{position:absolute;inset:0;background:#07060c;display:none;flex-direction:column;z-index:40}
+#battle.on{display:flex}
+#bscene{position:relative;flex:0 0 50%}
+#bcv{width:100%;height:100%;display:block;image-rendering:pixelated}
+#bcards{position:absolute;inset:0;pointer-events:none}
+.bcard{position:absolute;background:rgba(244,241,255,.95);color:#16121c;border-radius:10px;padding:6px 10px;min-width:46%;font-size:13px;border:2px solid #16121c}
+.bcard.f{top:8px;left:8px}.bcard.p{bottom:8px;right:8px}
+.hpbar{height:8px;background:#3a3550;border-radius:4px;overflow:hidden;margin:4px 0 2px}
+.hpfill{height:100%;transition:background .3s}
+.xpbar{height:4px;background:#ccc;border-radius:2px;overflow:hidden}.xpbar div{height:100%;background:#3c9ad2}
+.pips{display:flex;gap:3px;margin-top:3px}.pips i{width:8px;height:8px;border-radius:50%;background:#bbb}.pips i.a{background:#d23c5a}
+.st{background:#7a5bb5;color:#fff;font-size:10px;padding:1px 4px;border-radius:4px;margin-left:4px}
+.own{background:#4cd964;color:#000;font-size:10px;padding:1px 4px;border-radius:4px;margin-left:4px}
+#bmsg{background:#f4f1ff;color:#16121c;margin:6px 8px;border-radius:10px;padding:10px 12px;min-height:62px;font-size:15px;line-height:1.3;border:3px solid #16121c}
+#bact{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 8px 10px;overflow:auto;align-content:start}
+.btn{border:0;border-radius:10px;padding:12px;font-size:15px;font-weight:700;color:#fff;background:#3a3460;font-family:inherit}
+.btn:active{filter:brightness(1.3)}
+.btn.act{font-size:19px;padding:24px 8px}
+.red{background:#d23c5a}.blue{background:#3c6ad2}.yellow{background:#c9962a}.gray{background:#4a4660}
+.btn.move{display:flex;flex-direction:column;align-items:flex-start;text-shadow:0 1px 2px rgba(0,0,0,.6);padding:10px}
+.btn.move span{font-size:11px;font-weight:600;opacity:.95}
+.btn.dim{opacity:.4}
+.btn.back{grid-column:1/-1}
+.btn.wide{display:block;width:100%;margin:6px 0}
+.btn.big{font-size:19px;padding:16px}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.tile{padding:20px 6px;font-size:16px}
+.blist{grid-column:1/-1;display:flex;flex-direction:column;gap:6px}
+#panel{position:absolute;inset:0;background:#0e0c18;z-index:50;display:none;flex-direction:column}
+#panel.on{display:flex}
+.phead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1a1630;font-weight:800;color:#ffe23a;border-bottom:2px solid #2a2440}
+.pbody{flex:1;overflow:auto;padding:10px 12px 20px;-webkit-overflow-scrolling:touch}
+.lead{font-size:15px;line-height:1.4}
+.small{font-size:12px;opacity:.85}
+.center{text-align:center}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mrow{display:flex;gap:10px;align-items:center;background:#1a1630;border-radius:10px;padding:8px;margin:6px 0}
+.mrow.ko{opacity:.5}
+.mrow canvas{background:#2a2440;border-radius:8px;flex:0 0 auto}
+.mcol{flex:1;min-width:0}
+.tt{display:inline-block;font-size:10px;font-weight:800;color:#fff;padding:1px 5px;border-radius:4px;margin-right:4px;text-shadow:0 1px 1px rgba(0,0,0,.5)}
+.irow{background:#1a1630;border-radius:10px;padding:10px;margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.irow b{flex:1}.irow .small{flex-basis:100%}
+.irow.unk{opacity:.5}
+.box-bronze{border-left:6px solid #b07a4a}.box-silber{border-left:6px solid #c0c6cf}.box-gold{border-left:6px solid #d4af37}
+.detail{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.detail canvas{background:#1a1630;border-radius:10px}
+.mvrow{background:#1a1630;border-radius:8px;padding:8px;margin:5px 0;font-size:13px}
+.dex{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dcell{background:#1a1630;border-radius:10px;padding:6px;text-align:center;font-size:11px}
+.dcell canvas{display:block;margin:0 auto}
+.dcell .q{height:56px;line-height:56px;font-size:28px;opacity:.4}
+.dcell.unk{opacity:.7}
+.starter{display:flex;gap:10px;align-items:center;background:#1a1630;border-radius:12px;padding:10px;margin:8px 0}
+.starter canvas{background:#2a2440;border-radius:10px}
+canvas.map{width:100%;image-rendering:pixelated;background:#05050a;border-radius:8px}
+canvas.evo{display:block;margin:10px auto;background:#1a1630;border-radius:12px}
+textarea{width:100%;height:140px;background:#1a1630;color:#eee;border:1px solid #3a3460;border-radius:8px;font-size:11px;-webkit-user-select:text;user-select:text}
+#toasts{position:absolute;top:44px;left:8px;right:8px;z-index:80;pointer-events:none;display:flex;flex-direction:column;gap:6px}
+.toast{background:#1a1630;border:2px solid #ffe23a;border-radius:10px;padding:8px 10px;font-size:13px;transition:opacity .5s,transform .5s}
+.toast b{color:#ffe23a}
+#battle.on ~ #toasts{top:auto;bottom:14px}
+.toast.out{opacity:0;transform:translateY(-10px)}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .3s;z-index:70}
+#fade.on{opacity:1}
+#title{position:absolute;inset:0;z-index:48;background:radial-gradient(circle at 50% 30%,#2a1a50,#07060c 70%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
+#title.on{display:flex}
+#title h1{font-size:38px;margin:6px 0 0;letter-spacing:.06em;color:#ffe23a;text-shadow:0 3px 0 #d23c5a,0 6px 0 #16121c}
+#title .sub{font-size:14px;opacity:.85;margin:6px 0 14px}
+#titlebtns{width:100%;max-width:340px}
+#title .hint{font-size:11px;opacity:.6;margin-top:16px;max-width:340px;line-height:1.4}
+</style></head>
+<body>
+<div id="app">
+  <div id="hud"><span id="hudfloor">Tiefenkriecher</span><span id="hudmoney"></span><button id="hudmenu">Menue</button></div>
+  <div id="stage"><canvas id="view"></canvas>
+    <div id="dlg"><div id="dlgwho"></div><div id="dlgtxt"></div></div>
+  </div>
+  <div id="pad">
+    <div class="dpad"><div data-d="0"></div><div data-d="3"></div><div data-d="1"></div><div data-d="2"></div></div>
+    <div class="abtn"><div id="bb">B</div><div id="ba">A</div></div>
+  </div>
+  <div id="battle"><div id="bscene"><canvas id="bcv"></canvas><div id="bcards"></div></div><div id="bmsg"></div><div id="bact"></div></div>
+  <div id="panel"></div>
+  <div id="toasts"></div>
+  <div id="fade"></div>
+  <div id="title">
+    <canvas id="titlecv" width="320" height="200"></canvas>
+    <h1>TIEFENKRIECHER</h1>
+    <div class="sub">Acht Etagen. Fuenfzig Biester. Eine Show, die niemand ueberlebt. Ausser dir.</div>
+    <div id="titlebtns"></div>
+    <div class="hint">Offline spielen: In Safari auf Teilen tippen, dann &quot;Zum Home-Bildschirm&quot;. Danach ueber das Symbol starten, auch im Flugmodus. Fortschritt wird automatisch auf diesem Geraet gespeichert. Ton: Stummschalter aus.</div>
+  </div>
+</div>
+<script>(function(){/*
+
+ZzFX - Zuper Zmall Zound Zynth v1.4.0 by Frank Force
+https://github.com/KilledByAPixel/ZzFX
+
+ZzFX Features
+
+- Tiny synth engine with 20 controllable parameters.
+- Play sounds via code, no need for sound assed files!
+- Compatible with most modern web browsers.
+- Small code footprint, the micro version is under 1 kilobyte.
+- Can produce a huge variety of sound effect types.
+- Sounds can be played with a short call. zzfx(...[,,,,.1,,,,9])
+- A small bit of randomness appied to sounds when played.
+- Use ZZFX.GetNote to get frequencies on a standard diatonic scale.
+- Sounds can be saved out as wav files for offline playback.
+- No additional libraries or dependencies are required.
+
+*/
+/*
+
+  ZzFX MIT License
+  
+  Copyright (c) 2019 - Frank Force
+  
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+  
+*/
+
+'use strict';
+
+// play a zzfx sound
+function zzfx(...parameters) { return ZZFX.play(...parameters) }
+
+///////////////////////////////////////////////////////////////////////////////
+// ZZFX API for playing sounds
+const ZZFX =
+{
+    // master volume scale
+    volume: .3,
+    
+    // sample rate for audio
+    sampleRate: 44100,
+    
+    // create shared audio context
+    audioContext: null,
+
+    // play a sound from zzfx paramerters
+    play: function(...parameters)
+    {
+        // build samples and start sound
+        return this.playSamples([this.buildSamples(...parameters)]);
+    },
+
+    // play an array of samples
+    playSamples: function(sampleChannels, volumeScale=1, rate=1, pan=0, loop=false)
+    {
+        // create buffer and source
+        const channelCount = sampleChannels.length;
+        const sampleLength = sampleChannels[0].length;
+        const buffer = this.audioContext.createBuffer(channelCount, sampleLength, this.sampleRate);
+        const source = this.audioContext.createBufferSource();
+
+        // copy samples to buffer and setup source
+        sampleChannels.forEach((c,i)=> buffer.getChannelData(i).set(c));
+        source.buffer = buffer;
+        source.playbackRate.value = rate;
+        source.loop = loop;
+
+        // create and connect gain node
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.value = this.volume*volumeScale;
+        gainNode.connect(this.audioContext.destination);
+        source.gainNode = gainNode; // expose so callers can adjust or fade
+
+        // connect source to stereo panner and gain
+        const pannerNode = new StereoPannerNode(this.audioContext, {'pan':pan});
+        source.connect(pannerNode).connect(gainNode);
+        source.start();
+
+        // return sound
+        return source;
+    },
+
+    // build an array of samples
+    buildSamples: function
+    (
+        volume = 1, 
+        randomness = .05,
+        frequency = 220,
+        attack = 0,
+        sustain = 0,
+        release = .1,
+        shape = 0,
+        shapeCurve = 1,
+        slide = 0, 
+        deltaSlide = 0, 
+        pitchJump = 0, 
+        pitchJumpTime = 0, 
+        repeatTime = 0, 
+        noise = 0,
+        modulation = 0,
+        bitCrush = 0,
+        delay = 0,
+        sustainVolume = 1,
+        decay = 0,
+        tremolo = 0,
+        filter = 0
+    )
+    {
+        // init parameters
+        let sampleRate = this.sampleRate,
+            PI2 = Math.PI*2, 
+            abs = Math.abs, 
+            sign = v => v<0?-1:1, 
+            startSlide = slide *= 500 * PI2 / sampleRate / sampleRate,
+            startFrequency = frequency *= 
+                (1 + randomness*2*Math.random() - randomness) * PI2 / sampleRate,
+            modOffset = 0, // modulation offset  
+            repeat = 0,    // repeat offset
+            crush = 0,     // bit crush offset
+            jump = 1,      // pitch jump timer
+            length,        // sample length
+            b,             // sample buffer
+            t = 0,         // sample time
+            i = 0,         // sample index 
+            s = 0,         // sample value
+        f,             // wave frequency
+
+        // biquad LP/HP filter
+        quality = 2, w = PI2 * abs(filter) * 2 / sampleRate,
+        cos = Math.cos(w), alpha = Math.sin(w) / 2 / quality,
+        a0 = 1 + alpha, a1 = -2*cos / a0, a2 = (1 - alpha) / a0,
+        b0 = (1 + sign(filter) * cos) / 2 / a0, 
+        b1 = -(sign(filter) + cos) / a0, b2 = b0,
+        x2 = 0, x1 = 0, y2 = 0, y1 = 0;
+
+        // scale by sample rate
+        const minAttack = 9; // prevent pop if attack is 0
+        attack = attack * sampleRate || minAttack;
+        decay *= sampleRate;
+        sustain *= sampleRate;
+        release *= sampleRate;
+        delay *= sampleRate;
+        deltaSlide *= 500 * PI2 / sampleRate**3;
+        modulation *= PI2 / sampleRate;
+        pitchJump *= PI2 / sampleRate;
+        pitchJumpTime *= sampleRate;
+        repeatTime = repeatTime * sampleRate | 0;
+
+        // allocate the full sample buffer up front, much faster than growing an array
+        length = attack + decay + sustain + release + delay | 0;
+        b = new Float32Array(length > 0 ? length : 0);
+
+        // generate waveform
+        for(; i < length; b[i++] = s * volume)                 // sample
+        {
+            if (!(++crush%(bitCrush*100|0)))                   // bit crush
+            {
+                s = shape? shape>1? shape>2? shape>3? shape>4? // wave shape
+                    (t/PI2%1 < shapeCurve/2? 1 : -1) :         // 5 square duty
+                    Math.sin(t**3) :                           // 4 noise
+                    Math.max(Math.min(Math.tan(t),1),-1):      // 3 tan
+                    1-(2*t/PI2%2+2)%2:                         // 2 saw
+                    1-4*abs(Math.round(t/PI2)-t/PI2):          // 1 triangle
+                    Math.sin(t);                               // 0 sin
+
+                s = (repeatTime ?
+                        1 - tremolo + tremolo*Math.sin(PI2*i/repeatTime) // tremolo
+                        : 1) *
+                    (shape>4?s:sign(s)*abs(s)**shapeCurve) * // shape curve
+                    (i < attack ? i/attack :                 // attack
+                    i < attack + decay ?                     // decay
+                    1-((i-attack)/decay)*(1-sustainVolume) : // decay falloff
+                    i < attack  + decay + sustain ?          // sustain
+                    sustainVolume :                          // sustain volume
+                    i < length - delay ?                     // release
+                    (length - i - delay)/release *           // release falloff
+                    sustainVolume :                          // release volume
+                    0);                                      // post release
+
+                s = delay ? s/2 + (delay > i ? 0 :           // delay
+                    (i<length-delay? 1 : (length-i)/delay) * // release delay 
+                    b[i-delay|0]/2/volume) : s;              // sample delay
+
+                if (filter)                                  // apply filter
+                    s = y1 = b2*x2 + b1*(x2=x1) + b0*(x1=s) - a2*y2 - a1*(y2=y1);
+            }
+
+            f = (frequency += slide += deltaSlide) *// frequency
+                Math.cos(modulation*modOffset++);   // modulation
+            t += f + f*noise*(i*i*PI2%2-1);         // noise
+
+            if (jump && ++jump > pitchJumpTime)     // pitch jump
+            { 
+                frequency += pitchJump;             // apply pitch jump
+                startFrequency += pitchJump;        // also apply to start
+                jump = 0;                           // stop pitch jump time
+            } 
+
+            if (repeatTime && !(++repeat % repeatTime)) // repeat
+            { 
+                frequency = startFrequency;   // reset frequency
+                slide = startSlide;           // reset slide
+                jump ||= 1;                   // reset pitch jump time
+            }
+        }
+
+        return b; // return sample buffer
+    },
+
+    // get frequency of a musical note on a diatonic scale
+    getNote: function(semitoneOffset=0, rootNoteFrequency=440)
+    {
+        return rootNoteFrequency * 2**(semitoneOffset/12);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Sound object that can precache and play ZZFX sounds
+class ZZFXSound
+{
+    constructor(zzfxSound=[])
+    {
+        this.zzfxSound = zzfxSound;
+        
+        // extract randomness parameter from zzfxSound
+        this.randomness = zzfxSound[1] != undefined ? zzfxSound[1] : .05;
+        zzfxSound[1] = 0; // generate without frequency randomness
+        
+        // cache the sound samples
+        this.samples = ZZFX.buildSamples(...zzfxSound);
+    }
+
+    play(volume=1, pitch=1, randomnessScale=1, pan=0, loop=false)
+    {
+        if (!this.samples) return;
+
+        // play the sound
+        const playbackRate = pitch + pitch * this.randomness*randomnessScale*(Math.random()*2-1);
+        this.source = ZZFX.playSamples([this.samples], volume, playbackRate, pan, loop);
+        return this.source;
+    }
+}
+
+window.G = window.G || {}; window.G.ZZFX = ZZFX;})();</script>
+<script>// Alle Inhalte als reine Daten, damit Tests Konsistenz (Referenzen, Level-Kurven) pruefen koennen,
+// ohne dass UI-Code geladen werden muss.
+(function (G) {
+  'use strict';
+
+  G.TYPES = ['WILD', 'FEUER', 'WASSER', 'PFLANZE', 'BLITZ', 'SCHATTEN', 'TECH'];
+  G.TYPE_COLOR = {
+    WILD: '#b8a98a', FEUER: '#e8673c', WASSER: '#3f8fe0', PFLANZE: '#4caf50',
+    BLITZ: '#f2c230', SCHATTEN: '#7a5bb5', TECH: '#5fc6c9'
+  };
+
+  // Nur Abweichungen von 1.0; jede Typ-Kombination bleibt so bewusst knapp und testbar.
+  G.CHART = {
+    WILD: { TECH: 0.5 },
+    FEUER: { PFLANZE: 2, TECH: 2, WASSER: 0.5, FEUER: 0.5 },
+    WASSER: { FEUER: 2, TECH: 2, PFLANZE: 0.5, WASSER: 0.5 },
+    PFLANZE: { WASSER: 2, BLITZ: 2, FEUER: 0.5, PFLANZE: 0.5, TECH: 0.5 },
+    BLITZ: { WASSER: 2, TECH: 2, PFLANZE: 0.5, BLITZ: 0.5 },
+    SCHATTEN: { WILD: 2, BLITZ: 2, TECH: 0.5, SCHATTEN: 0.5 },
+    TECH: { SCHATTEN: 2, WILD: 2, FEUER: 0.5, BLITZ: 0.5, TECH: 0.5 }
+  };
+
+  // p = Staerke, a = Genauigkeit, eff beschreibt Nebenwirkungen in einem einheitlichen Format,
+  // damit die Engine keine Sonderfaelle pro Attacke braucht.
+  G.MOVES = {
+    kratzer: { n: 'Kratzer', t: 'WILD', p: 40, a: 100, pp: 35 },
+    rempler: { n: 'Rempler', t: 'WILD', p: 55, a: 95, pp: 25 },
+    biss: { n: 'Biss', t: 'WILD', p: 65, a: 100, pp: 20 },
+    wutangriff: { n: 'Wutangriff', t: 'WILD', p: 85, a: 95, pp: 15 },
+    hyperstoss: { n: 'Hyperstoss', t: 'WILD', p: 115, a: 85, pp: 5 },
+    knurren: { n: 'Knurren', t: 'WILD', p: 0, a: 100, pp: 30, eff: { foe: { atk: -1 } } },
+    haerten: { n: 'Haerten', t: 'WILD', p: 0, a: 100, pp: 30, eff: { self: { def: 1 } } },
+    fokus: { n: 'Fokus', t: 'WILD', p: 0, a: 100, pp: 20, eff: { self: { atk: 1 } } },
+    nickerchen: { n: 'Heilnickerchen', t: 'WILD', p: 0, a: 100, pp: 8, eff: { heal: 0.5 } },
+
+    funke: { n: 'Funkenflug', t: 'FEUER', p: 40, a: 100, pp: 30, eff: { st: 'brn', ch: 0.1 } },
+    glutball: { n: 'Glutball', t: 'FEUER', p: 60, a: 100, pp: 20, eff: { st: 'brn', ch: 0.1 } },
+    flammenwurf: { n: 'Flammenwurf', t: 'FEUER', p: 85, a: 100, pp: 15, eff: { st: 'brn', ch: 0.1 } },
+    inferno: { n: 'Inferno', t: 'FEUER', p: 115, a: 80, pp: 5, eff: { st: 'brn', ch: 0.3 } },
+    zuendschnur: { n: 'Zuendschnur', t: 'FEUER', p: 0, a: 85, pp: 15, eff: { st: 'brn', ch: 1 } },
+
+    spritzer: { n: 'Spritzer', t: 'WASSER', p: 40, a: 100, pp: 30 },
+    blasenstrahl: { n: 'Blasenstrahl', t: 'WASSER', p: 60, a: 100, pp: 20, eff: { foe: { spd: -1 }, ch: 0.2 } },
+    druckwelle: { n: 'Druckwelle', t: 'WASSER', p: 85, a: 100, pp: 15 },
+    tsunami: { n: 'Kanaltsunami', t: 'WASSER', p: 115, a: 80, pp: 5 },
+    quellwasser: { n: 'Quellwasser', t: 'WASSER', p: 0, a: 100, pp: 8, eff: { heal: 0.5 } },
+
+    rankenhieb: { n: 'Rankenhieb', t: 'PFLANZE', p: 40, a: 100, pp: 30 },
+    blattklinge: { n: 'Blattklinge', t: 'PFLANZE', p: 60, a: 100, pp: 20 },
+    saugwurzel: { n: 'Saugwurzel', t: 'PFLANZE', p: 65, a: 100, pp: 15, eff: { drain: 0.5 } },
+    dornenwald: { n: 'Dornenwald', t: 'PFLANZE', p: 110, a: 85, pp: 5 },
+    sporenwolke: { n: 'Sporenwolke', t: 'PFLANZE', p: 0, a: 75, pp: 15, eff: { st: 'slp', ch: 1 } },
+    giftnebel: { n: 'Giftnebel', t: 'PFLANZE', p: 0, a: 85, pp: 20, eff: { st: 'psn', ch: 1 } },
+
+    stromstoss: { n: 'Stromstoss', t: 'BLITZ', p: 40, a: 100, pp: 30, eff: { st: 'par', ch: 0.1 } },
+    zap: { n: 'Kurzschluss', t: 'BLITZ', p: 60, a: 100, pp: 20, eff: { st: 'par', ch: 0.1 } },
+    donnerkeil: { n: 'Donnerkeil', t: 'BLITZ', p: 85, a: 100, pp: 15, eff: { st: 'par', ch: 0.15 } },
+    ueberspannung: { n: 'Ueberspannung', t: 'BLITZ', p: 115, a: 80, pp: 5 },
+    laehmfeld: { n: 'Laehmfeld', t: 'BLITZ', p: 0, a: 90, pp: 15, eff: { st: 'par', ch: 1 } },
+
+    schattenstich: { n: 'Schattenstich', t: 'SCHATTEN', p: 40, a: 100, pp: 30 },
+    albtraum: { n: 'Albtraum', t: 'SCHATTEN', p: 60, a: 100, pp: 20, eff: { foe: { def: -1 }, ch: 0.2 } },
+    dunkelpuls: { n: 'Dunkelpuls', t: 'SCHATTEN', p: 85, a: 100, pp: 15 },
+    leere: { n: 'Grosse Leere', t: 'SCHATTEN', p: 110, a: 85, pp: 5 },
+    tarnschleier: { n: 'Tarnschleier', t: 'SCHATTEN', p: 0, a: 100, pp: 15, eff: { self: { def: 1, spd: 1 } } },
+
+    laserpointer: { n: 'Laserpointer', t: 'TECH', p: 40, a: 100, pp: 30 },
+    hackangriff: { n: 'Hackangriff', t: 'TECH', p: 60, a: 100, pp: 20, eff: { foe: { def: -1 }, ch: 0.5 } },
+    emp: { n: 'EMP-Welle', t: 'TECH', p: 85, a: 100, pp: 15, eff: { st: 'par', ch: 0.1 } },
+    orbitalschlag: { n: 'Orbitalschlag', t: 'TECH', p: 120, a: 75, pp: 5 },
+    firewall: { n: 'Firewall', t: 'TECH', p: 0, a: 100, pp: 15, eff: { self: { def: 2 } } },
+    overclock: { n: 'Overclock', t: 'TECH', p: 0, a: 100, pp: 15, eff: { self: { atk: 1, spd: 1 } } }
+  };
+
+  // Pro Typ eine Reihe nach Staerke; Lernsets werden daraus erzeugt, damit jede Art
+  // konsistent mit ihrem Level skaliert und kein Handpflege-Fehler entsteht.
+  G.TYPE_POOL = {
+    WILD: ['kratzer', 'rempler', 'biss', 'wutangriff', 'hyperstoss'],
+    FEUER: ['funke', 'glutball', 'flammenwurf', 'inferno'],
+    WASSER: ['spritzer', 'blasenstrahl', 'druckwelle', 'tsunami'],
+    PFLANZE: ['rankenhieb', 'blattklinge', 'saugwurzel', 'dornenwald'],
+    BLITZ: ['stromstoss', 'zap', 'donnerkeil', 'ueberspannung'],
+    SCHATTEN: ['schattenstich', 'albtraum', 'dunkelpuls', 'leere'],
+    TECH: ['laserpointer', 'hackangriff', 'emp', 'orbitalschlag']
+  };
+  G.TYPE_STATUS = {
+    WILD: 'knurren', FEUER: 'zuendschnur', WASSER: 'quellwasser', PFLANZE: 'sporenwolke',
+    BLITZ: 'laehmfeld', SCHATTEN: 'tarnschleier', TECH: 'overclock'
+  };
+
+  // look: Parameter fuer den prozeduralen Sprite-Zeichner (keine Bilddateien noetig, offline-faehig).
+  // s: [KP, Angriff, Verteidigung, Initiative]
+  function sp(id, n, types, s, look, extra) {
+    return Object.assign({ id, n, types, s, look, cr: 120, xp: 60 }, extra || {});
+  }
+  G.SPECIES = [
+    // Starter
+    sp('zuendfuchs', 'Zuendfuchs', ['FEUER'], [44, 52, 40, 55], { b: 'quad', c1: '#e8673c', c2: '#ffe0b0', ear: 'pointy', tail: 'bushy', acc: 'none', eye: 'big' }, { evo: ['glutlunte', 16], cr: 45, xp: 64, starter: 1, desc: 'Traegt eine Lunte als Schwanz. Niemand weiss, wer sie angezuendet hat.' }),
+    sp('glutlunte', 'Glutlunte', ['FEUER'], [58, 68, 52, 72], { b: 'quad', c1: '#d9481e', c2: '#ffd27a', ear: 'pointy', tail: 'bushy', acc: 'goggles', eye: 'angry' }, { evo: ['feuerbaron', 36], cr: 45, xp: 142, desc: 'Hat gelernt, Schweissbrillen stilvoll zu tragen.' }),
+    sp('feuerbaron', 'Feuerbaron', ['FEUER', 'TECH'], [78, 98, 72, 92], { b: 'quad', c1: '#b83212', c2: '#ffcc66', ear: 'pointy', tail: 'bushy', acc: 'tophat', eye: 'angry' }, { cr: 45, xp: 240, desc: 'Ein Gentleman-Dieb mit Zylinder. Hinterlaesst Visitenkarten aus Asche.' }),
+    sp('kiemotter', 'Kiemotter', ['WASSER'], [48, 48, 48, 48], { b: 'long', c1: '#3f8fe0', c2: '#cfe8ff', ear: 'round', tail: 'fin', acc: 'none', eye: 'big' }, { evo: ['strudelotter', 16], cr: 45, xp: 64, starter: 1, desc: 'Atmet unter Wasser durch selbstgebastelte Kiemen.' }),
+    sp('strudelotter', 'Strudelotter', ['WASSER'], [64, 62, 64, 62], { b: 'long', c1: '#2a6fc0', c2: '#bfe0ff', ear: 'round', tail: 'fin', acc: 'goggles', eye: 'dot' }, { evo: ['admiralotter', 36], cr: 45, xp: 142, desc: 'Plant jeden Angriff auf einer wasserfesten Tafel.' }),
+    sp('admiralotter', 'Admiral Otterbach', ['WASSER', 'SCHATTEN'], [88, 88, 86, 84], { b: 'long', c1: '#1b4f99', c2: '#e6f2ff', ear: 'round', tail: 'fin', acc: 'cape', eye: 'angry' }, { cr: 45, xp: 240, desc: 'Kommandiert eine Flotte aus Gummienten. Erschreckend effektiv.' }),
+    sp('sprosskroete', 'Sprosskroete', ['PFLANZE'], [52, 46, 54, 42], { b: 'round', c1: '#4caf50', c2: '#d7f5c4', ear: 'sprout', tail: 'none', acc: 'none', eye: 'big' }, { evo: ['rankenkroete', 16], cr: 45, xp: 64, starter: 1, desc: 'Auf ihrem Ruecken waechst ein Keimling, der gerne mitredet.' }),
+    sp('rankenkroete', 'Rankenkroete', ['PFLANZE'], [70, 60, 72, 56], { b: 'round', c1: '#388e3c', c2: '#c5eab0', ear: 'sprout', tail: 'none', acc: 'monocle', eye: 'dot' }, { evo: ['wurzelfuerstin', 36], cr: 45, xp: 142, desc: 'Traegt ein Monokel aus Tau. Sieht damit nichts, findet es aber elegant.' }),
+    sp('wurzelfuerstin', 'Wurzelfuerstin', ['PFLANZE', 'SCHATTEN'], [96, 82, 96, 70], { b: 'round', c1: '#2e7031', c2: '#f0d0ff', ear: 'sprout', tail: 'none', acc: 'crown', eye: 'angry' }, { cr: 45, xp: 240, desc: 'Regiert ein unterirdisches Reich aus Pilzgeflecht und Erpressung.' }),
+
+    // Etage 1
+    sp('kabelratte', 'Kabelratte', ['TECH'], [35, 45, 35, 60], { b: 'quad', c1: '#8a8f99', c2: '#ff7aa8', ear: 'round', tail: 'thin', acc: 'antenna', eye: 'dot' }, { evo: ['hackerratte', 18], cr: 220, xp: 45, desc: 'Nagt Glasfaserkabel an und hoert dabei Gespraeche mit.' }),
+    sp('hackerratte', 'Hackerratte', ['TECH', 'SCHATTEN'], [55, 70, 50, 85], { b: 'quad', c1: '#5d636d', c2: '#80ff9a', ear: 'round', tail: 'thin', acc: 'visor', eye: 'visor' }, { evo: ['systemratte', 38], cr: 120, xp: 120, desc: 'Hat drei Banken gehackt, um an Kaesekuchen zu kommen.' }),
+    sp('systemratte', 'Systemratte', ['TECH', 'SCHATTEN'], [75, 95, 70, 105], { b: 'quad', c1: '#3b3f47', c2: '#3cff7a', ear: 'round', tail: 'thin', acc: 'crown', eye: 'visor' }, { cr: 45, xp: 210, desc: 'Ist offiziell Administrator dieser Etage. Niemand hat zugestimmt.' }),
+    sp('spaehtaube', 'Spaehtaube', ['WILD'], [40, 40, 35, 56], { b: 'bird', c1: '#a3a8b5', c2: '#7fd1c9', ear: 'none', tail: 'feather', acc: 'none', eye: 'dot' }, { evo: ['drohnentaube', 20], cr: 230, xp: 42, desc: 'Gurrt verschluesselt.' }),
+    sp('drohnentaube', 'Drohnentaube', ['WILD', 'TECH'], [62, 64, 56, 88], { b: 'bird', c1: '#7c8292', c2: '#5fc6c9', ear: 'none', tail: 'feather', acc: 'antenna', eye: 'visor' }, { cr: 90, xp: 130, desc: 'Halb Taube, halb Ueberwachungsstaat.' }),
+    sp('glibberschnecke', 'Glibberschnecke', ['WASSER'], [50, 35, 55, 20], { b: 'blob', c1: '#7ec8e3', c2: '#c49a6c', ear: 'antenna', tail: 'none', acc: 'none', eye: 'sleepy' }, { evo: ['panzerschnecke', 22], cr: 200, xp: 44, desc: 'Hinterlaesst eine Spur aus leicht leitfaehigem Schleim.' }),
+    sp('panzerschnecke', 'Panzerschnecke', ['WASSER', 'TECH'], [72, 55, 95, 25], { b: 'blob', c1: '#5aa6c4', c2: '#8a8f99', ear: 'antenna', tail: 'none', acc: 'visor', eye: 'sleepy' }, { cr: 90, xp: 135, desc: 'Ihr Haus ist jetzt ein Tresor. Mit Fingerabdruckscanner.' }),
+    sp('rammeber', 'Rammeber', ['WILD'], [50, 58, 45, 38], { b: 'quad', c1: '#8d6e52', c2: '#e0c09a', ear: 'pointy', tail: 'thin', acc: 'none', eye: 'angry' }, { evo: ['bulldozerkeiler', 30], cr: 190, xp: 50, desc: 'Laeuft gegen Waende. Die Waende verlieren meistens.' }),
+    sp('bulldozerkeiler', 'Bulldozer-Keiler', ['WILD', 'TECH'], [85, 98, 82, 50], { b: 'quad', c1: '#6b4f3a', c2: '#f2c230', ear: 'pointy', tail: 'thin', acc: 'goggles', eye: 'angry' }, { cr: 75, xp: 175, desc: 'Hat eine Schaufel montiert. Und eine Hupe.' }),
+
+    // Etage 2
+    sp('pilzdachs', 'Pilzdachs', ['PFLANZE'], [55, 50, 55, 40], { b: 'quad', c1: '#6d6d6d', c2: '#f5f5f5', ear: 'shroom', tail: 'bushy', acc: 'none', eye: 'sleepy' }, { evo: ['sporendachs', 26], cr: 180, xp: 55, desc: 'Ein Pilz hat ihn adoptiert. Oder umgekehrt.' }),
+    sp('sporendachs', 'Sporendachs', ['PFLANZE', 'SCHATTEN'], [78, 72, 78, 55], { b: 'quad', c1: '#4a4a4a', c2: '#d070ff', ear: 'shroom', tail: 'bushy', acc: 'none', eye: 'angry' }, { cr: 75, xp: 160, desc: 'Niest Sporen, die schlecht gelaunt machen.' }),
+    sp('giftfrosch', 'Pfeilgiftfrosch', ['PFLANZE'], [45, 62, 40, 70], { b: 'round', c1: '#1ec8a0', c2: '#1a1a2e', ear: 'none', tail: 'none', acc: 'none', eye: 'big' }, { cr: 150, xp: 70, desc: 'Ist auf zwanzig Planeten verboten. Hier noch nicht.' }),
+    sp('gluehkaefer', 'Gluehkaefer', ['BLITZ'], [38, 40, 45, 50], { b: 'bug', c1: '#4a3f1a', c2: '#fff27a', ear: 'antenna', tail: 'glow', acc: 'none', eye: 'dot' }, { evo: ['laternenkaefer', 18], cr: 220, xp: 42, desc: 'Leuchtet, wenn er nervoes ist. Also immer.' }),
+    sp('laternenkaefer', 'Laternenkaefer', ['BLITZ'], [55, 58, 60, 66], { b: 'bug', c1: '#5c4d16', c2: '#ffe23a', ear: 'antenna', tail: 'glow', acc: 'goggles', eye: 'dot' }, { evo: ['leuchtturmkaefer', 36], cr: 120, xp: 120, desc: 'Wird nachts von Motten verfolgt und hat Angst vor ihnen.' }),
+    sp('leuchtturmkaefer', 'Leuchtturmkaefer', ['BLITZ', 'TECH'], [75, 85, 80, 90], { b: 'bug', c1: '#3d330d', c2: '#fff7b0', ear: 'antenna', tail: 'glow', acc: 'visor', eye: 'visor' }, { cr: 45, xp: 215, desc: 'Sein Licht ist hell genug, um Gedanken zu blenden.' }),
+    sp('grabmaulwurf', 'Grabmaulwurf', ['WILD'], [50, 55, 50, 35], { b: 'round', c1: '#5a4636', c2: '#ffb3b3', ear: 'none', tail: 'thin', acc: 'goggles', eye: 'sleepy' }, { evo: ['bohrmaulwurf', 25], cr: 190, xp: 52, desc: 'Graebt Tunnel in Rekordzeit. Verlaeuft sich darin ebenso schnell.' }),
+    sp('bohrmaulwurf', 'Bohrmaulwurf', ['WILD', 'TECH'], [75, 85, 75, 50], { b: 'round', c1: '#40312a', c2: '#c0c6cf', ear: 'none', tail: 'thin', acc: 'drill', eye: 'angry' }, { cr: 75, xp: 160, desc: 'Ein Bohrkopf statt Nase. Die Versicherung schweigt.' }),
+    sp('netzspinne', 'Netzspinne', ['SCHATTEN'], [40, 50, 40, 55], { b: 'bug', c1: '#2e2433', c2: '#c084ff', ear: 'none', tail: 'none', acc: 'none', eye: 'many' }, { evo: ['glasfaserspinne', 28], cr: 190, xp: 50, desc: 'Spinnt Netze aus alten Ladekabeln.' }),
+    sp('glasfaserspinne', 'Glasfaserspinne', ['SCHATTEN', 'TECH'], [65, 82, 62, 85], { b: 'bug', c1: '#1e1828', c2: '#5fe6ff', ear: 'none', tail: 'none', acc: 'antenna', eye: 'many' }, { cr: 75, xp: 165, desc: 'Ihr Netz hat besseres WLAN als die Oberflaeche.' }),
+
+    // Etage 3
+    sp('neongecko', 'Neongecko', ['BLITZ'], [45, 55, 40, 65], { b: 'long', c1: '#ff4fd8', c2: '#4ffff0', ear: 'none', tail: 'thin', acc: 'none', eye: 'big' }, { evo: ['reklamegecko', 27], cr: 180, xp: 58, desc: 'Blinkt im Rhythmus aufdringlicher Werbung.' }),
+    sp('reklamegecko', 'Reklamegecko', ['BLITZ', 'SCHATTEN'], [65, 80, 58, 92], { b: 'long', c1: '#d42fb5', c2: '#ffee55', ear: 'none', tail: 'thin', acc: 'visor', eye: 'angry' }, { cr: 75, xp: 165, desc: 'Verkauft dir Dinge, waehrend er dich angreift.' }),
+    sp('turbohamster', 'Turbohamster', ['BLITZ'], [40, 45, 35, 75], { b: 'round', c1: '#e0a35a', c2: '#fff1d6', ear: 'round', tail: 'none', acc: 'none', eye: 'big' }, { evo: ['laufradhamster', 22], cr: 200, xp: 50, desc: 'Erzeugt Strom durch reine Panik.' }),
+    sp('laufradhamster', 'Laufrad-Hamster', ['BLITZ', 'TECH'], [60, 68, 55, 105], { b: 'round', c1: '#c2853d', c2: '#5fc6c9', ear: 'round', tail: 'none', acc: 'wheel', eye: 'angry' }, { cr: 90, xp: 145, desc: 'Versorgt eine ganze Etage mit Strom. Bezahlt wird er in Koernern.' }),
+    sp('funkenigel', 'Funkenigel', ['BLITZ'], [48, 50, 58, 45], { b: 'round', c1: '#6b5a48', c2: '#f2c230', ear: 'spikes', tail: 'none', acc: 'none', eye: 'dot' }, { evo: ['teslaigel', 24], cr: 190, xp: 54, desc: 'Jeder Stachel ist ein kleiner Blitzableiter.' }),
+    sp('teslaigel', 'Tesla-Igel', ['BLITZ'], [70, 75, 85, 62], { b: 'round', c1: '#4f4234', c2: '#9fe8ff', ear: 'spikes', tail: 'none', acc: 'coil', eye: 'angry' }, { cr: 75, xp: 160, desc: 'Umarmungen sind nicht empfohlen.' }),
+    sp('tresorbaer', 'Tresorbaer', ['TECH'], [55, 60, 60, 50], { b: 'quad', c1: '#7d7d7d', c2: '#1a1a1a', ear: 'round', tail: 'ring', acc: 'mask', eye: 'dot' }, { evo: ['safeknacker', 30], cr: 170, xp: 60, desc: 'Ein Waschbaer mit Stethoskop. Kein Schloss ist sicher.' }),
+    sp('safeknacker', 'Meister-Safeknacker', ['TECH', 'SCHATTEN'], [80, 90, 78, 88], { b: 'quad', c1: '#5a5a5a', c2: '#d4af37', ear: 'round', tail: 'ring', acc: 'tophat', eye: 'angry' }, { cr: 60, xp: 185, desc: 'Plant Einbrueche drei Etagen im Voraus. Mit Diagrammen.' }),
+    sp('schatzkraehe', 'Schatzkraehe', ['SCHATTEN'], [45, 55, 40, 62], { b: 'bird', c1: '#22202b', c2: '#d4af37', ear: 'none', tail: 'feather', acc: 'none', eye: 'dot' }, { evo: ['juwelenrabe', 28], cr: 180, xp: 56, desc: 'Sammelt alles, was glaenzt. Inklusive deiner Zaehne, wenn du laechelst.' }),
+    sp('juwelenrabe', 'Juwelenrabe', ['SCHATTEN', 'WILD'], [68, 85, 62, 90], { b: 'bird', c1: '#15131c', c2: '#ff3a6e', ear: 'none', tail: 'feather', acc: 'monocle', eye: 'angry' }, { cr: 75, xp: 170, desc: 'Ein Rubin im Auge, ein Plan im Kopf.' }),
+
+    // Etage 4
+    sp('laborlotl', 'Laborlotl', ['WASSER'], [55, 50, 50, 50], { b: 'long', c1: '#ffb3d1', c2: '#ff6fa8', ear: 'gills', tail: 'fin', acc: 'none', eye: 'big' }, { evo: ['mutalotl', 32], cr: 160, xp: 62, desc: 'Entkam aus einem Labor. Das Labor ist jetzt unter Wasser.' }),
+    sp('mutalotl', 'Mutalotl', ['WASSER', 'TECH'], [85, 82, 78, 75], { b: 'long', c1: '#e080b0', c2: '#5fe6ff', ear: 'gills', tail: 'fin', acc: 'visor', eye: 'visor' }, { cr: 60, xp: 185, desc: 'Regeneriert alles. Sogar verlorene Argumente.' }),
+    sp('kanalhai', 'Kanalhai', ['WASSER'], [58, 70, 45, 60], { b: 'fish', c1: '#5d7a8c', c2: '#e6eef2', ear: 'none', tail: 'fin', acc: 'none', eye: 'angry' }, { evo: ['kloakenhai', 38], cr: 150, xp: 68, desc: 'Gross geworden mit Pizzaresten und Wut.' }),
+    sp('kloakenhai', 'Kloakenhai', ['WASSER', 'SCHATTEN'], [90, 105, 72, 85], { b: 'fish', c1: '#3e5666', c2: '#b8ff6a', ear: 'none', tail: 'fin', acc: 'goggles', eye: 'angry' }, { cr: 45, xp: 215, desc: 'Der Grund, warum niemand mehr in den Abfluss schaut.' }),
+    sp('lavamolch', 'Lavamolch', ['FEUER'], [50, 58, 50, 52], { b: 'long', c1: '#ff5a1f', c2: '#2a1a12', ear: 'none', tail: 'thin', acc: 'none', eye: 'dot' }, { evo: ['magmamolch', 30], cr: 170, xp: 60, desc: 'Badet gerne. In Lava.' }),
+    sp('magmamolch', 'Magmamolch', ['FEUER', 'WILD'], [78, 90, 75, 75], { b: 'long', c1: '#d63a0a', c2: '#ffcc33', ear: 'horn', tail: 'thin', acc: 'none', eye: 'angry' }, { cr: 75, xp: 175, desc: 'Sein Atem schmilzt Waffeleisen.' }),
+
+    // Etage 5
+    sp('zeiteule', 'Zeiteule', ['SCHATTEN'], [55, 50, 55, 55], { b: 'bird', c1: '#7a5b3a', c2: '#e8d7b0', ear: 'tuft', tail: 'feather', acc: 'monocle', eye: 'big' }, { evo: ['uhrwerkuhu', 35], cr: 150, xp: 66, desc: 'Weiss immer, wie spaet es ist. Sagt es dir aus Prinzip nicht.' }),
+    sp('uhrwerkuhu', 'Uhrwerk-Uhu', ['SCHATTEN', 'TECH'], [85, 85, 85, 80], { b: 'bird', c1: '#5a4026', c2: '#d4af37', ear: 'tuft', tail: 'feather', acc: 'gear', eye: 'visor' }, { cr: 45, xp: 200, desc: 'Tickt leise. Wenn es aufhoert, lauf.' }),
+    sp('flatterlinse', 'Flatterlinse', ['SCHATTEN'], [45, 50, 40, 70], { b: 'bat', c1: '#4b3b5c', c2: '#ffb0ff', ear: 'pointy', tail: 'none', acc: 'none', eye: 'big' }, { evo: ['nachtsonar', 24], cr: 190, xp: 52, desc: 'Traegt eine Linse, um besser zu hoeren. Ergibt keinen Sinn, funktioniert aber.' }),
+    sp('nachtsonar', 'Nachtsonar', ['SCHATTEN', 'BLITZ'], [65, 72, 58, 98], { b: 'bat', c1: '#2f2440', c2: '#7affff', ear: 'pointy', tail: 'none', acc: 'antenna', eye: 'visor' }, { cr: 90, xp: 155, desc: 'Sendet Ultraschall-Beleidigungen.' }),
+    sp('schleierkatze', 'Schleierkatze', ['SCHATTEN'], [50, 58, 45, 68], { b: 'quad', c1: '#e8e2f2', c2: '#9b7bd1', ear: 'pointy', tail: 'thin', acc: 'bowtie', eye: 'big' }, { evo: ['phantomkatze', 30], cr: 150, xp: 64, desc: 'Erscheint nur, wenn sie bewundert wird.' }),
+    sp('phantomkatze', 'Phantomkatze', ['SCHATTEN', 'WILD'], [72, 92, 65, 100], { b: 'quad', c1: '#c9bfe0', c2: '#5b2a9e', ear: 'pointy', tail: 'thin', acc: 'crown', eye: 'angry' }, { cr: 60, xp: 185, desc: 'Verlangt Applaus. Sonst wird es unangenehm.' }),
+
+    // Etage 6-8 und Raritaeten
+    sp('schrankgorilla', 'Schrankgorilla', ['WILD'], [80, 85, 80, 40], { b: 'tall', c1: '#3a3a3a', c2: '#bfbfbf', ear: 'round', tail: 'none', acc: 'shades', eye: 'dot' }, { evo: ['silberruecken', 42], cr: 120, xp: 90, desc: 'Leibwaechter-Ausbildung. Sagt nie mehr als drei Woerter.' }),
+    sp('silberruecken', 'Panzer-Silberruecken', ['WILD', 'TECH'], [110, 115, 105, 55], { b: 'tall', c1: '#262626', c2: '#d9d9d9', ear: 'round', tail: 'none', acc: 'visor', eye: 'visor' }, { cr: 45, xp: 230, desc: 'Hat einmal einen Panzer gehoben, um darunter seinen Schluessel zu suchen.' }),
+    sp('hologrammpfau', 'Hologramm-Pfau', ['TECH', 'SCHATTEN'], [75, 85, 75, 95], { b: 'bird', c1: '#2bb5a5', c2: '#ff4fd8', ear: 'crest', tail: 'fan', acc: 'none', eye: 'big' }, { cr: 30, xp: 220, rare: 1, desc: 'Existiert vielleicht gar nicht. Die Projektion ist sich unsicher.' }),
+    sp('kristallfuchs', 'Kristallfuchs', ['SCHATTEN', 'FEUER'], [80, 95, 75, 100], { b: 'quad', c1: '#9fe8ff', c2: '#ff4fd8', ear: 'pointy', tail: 'bushy', acc: 'none', eye: 'angry' }, { cr: 25, xp: 230, rare: 1, desc: 'Sein Fell bricht Licht in Farben, die verboten sein sollten.' }),
+    sp('abgrundwal', 'Abgrundwal', ['SCHATTEN', 'WASSER'], [130, 120, 110, 80], { b: 'fish', c1: '#0f1a3d', c2: '#7affff', ear: 'none', tail: 'fin', acc: 'crown', eye: 'big' }, { cr: 5, xp: 320, legend: 1, desc: 'Schwimmt durch das Dunkel unter dem Studio. Er war zuerst hier.' })
+  ];
+  G.SPECIES_BY_ID = {};
+  G.SPECIES.forEach(function (s, i) { s.no = i + 1; G.SPECIES_BY_ID[s.id] = s; });
+
+  // Lernsets aus Typ-Pools erzeugen: Primaertyp traegt die Hauptlast, Sekundaertyp kommt spaeter,
+  // damit Entwicklungen sich auch spielerisch wie ein Upgrade anfuehlen.
+  G.buildLearnset = function (spc) {
+    var t1 = spc.types[0], t2 = spc.types[1];
+    var p1 = G.TYPE_POOL[t1], p2 = t2 ? G.TYPE_POOL[t2] : null, ls = [];
+    ls.push([1, 'kratzer'], [1, p1[0]], [5, 'knurren'], [9, p1[1]], [14, 'biss']);
+    if (p2) ls.push([16, p2[1]]);
+    ls.push([20, G.TYPE_STATUS[t1]], [24, p1[2]]);
+    if (p2) ls.push([30, p2[2]]);
+    ls.push([35, t1 === 'WILD' ? 'fokus' : 'haerten'], [40, 'nickerchen'], [44, p1[3] || 'hyperstoss']);
+    if (p2) ls.push([50, p2[3] || 'hyperstoss']);
+    ls.push([55, 'hyperstoss']);
+    var seen = {}, out = [];
+    ls.forEach(function (e) { if (!seen[e[1]]) { seen[e[1]] = 1; out.push(e); } });
+    out.sort(function (a, b) { return a[0] - b[0]; });
+    return out;
+  };
+  G.SPECIES.forEach(function (s) { s.learn = G.buildLearnset(s); });
+
+  G.ITEMS = {
+    trank: { n: 'Trank', d: 'Heilt 25 KP.', price: 100, kind: 'heal', v: 25, minFloor: 1 },
+    supertrank: { n: 'Supertrank', d: 'Heilt 70 KP.', price: 300, kind: 'heal', v: 70, minFloor: 2 },
+    hypertrank: { n: 'Hypertrank', d: 'Heilt 200 KP.', price: 800, kind: 'heal', v: 200, minFloor: 4 },
+    beleber: { n: 'Beleber', d: 'Belebt ein besiegtes Biest mit halben KP.', price: 600, kind: 'revive', v: 0.5, minFloor: 2 },
+    allheil: { n: 'Allheilmittel', d: 'Heilt alle Zustaende.', price: 250, kind: 'cure', minFloor: 1 },
+    aether: { n: 'Aether', d: 'Fuellt AP aller Attacken um 10 auf.', price: 400, kind: 'pp', v: 10, minFloor: 3 },
+    kapsel: { n: 'Fangkapsel', d: 'Fangt wilde Biester.', price: 150, kind: 'ball', v: 1, minFloor: 1 },
+    superkapsel: { n: 'Superkapsel', d: 'Bessere Fangquote.', price: 450, kind: 'ball', v: 1.6, minFloor: 3 },
+    hyperkapsel: { n: 'Hyperkapsel', d: 'Sehr gute Fangquote.', price: 1000, kind: 'ball', v: 2.3, minFloor: 6 },
+    rauch: { n: 'Fluchtrauch', d: 'Garantierte Flucht aus wilden Kaempfen.', price: 200, kind: 'flee', minFloor: 1 },
+    spray: { n: 'Abwehrspray', d: '150 Schritte keine schwaecheren Begegnungen.', price: 350, kind: 'repel', v: 150, minFloor: 2 },
+    sonderbonbon: { n: 'Sonderbonbon', d: 'Ein Level aufwaerts. Sponsorware.', price: 0, kind: 'candy', minFloor: 99 }
+  };
+
+  // Etagen bestimmen Schwierigkeitskurve und damit die Spielzeit; Level-Spannen ueberlappen leicht,
+  // damit man nicht zwangsweise grinden muss, es aber kann.
+  G.FLOORS = [
+    { n: 'Kanalisation der Premiere', lv: [3, 7], size: 34, rooms: 8, pal: ['#1d2b2a', '#3a5a52', '#2f6b3a', '#4f8f5a'], wild: [['kabelratte', 30], ['spaehtaube', 25], ['glibberschnecke', 20], ['rammeber', 20], ['turbohamster', 5]], trainers: 3,
+      boss: { n: 'Rattenkoenig Gustav', t: 'Herrscher ueber 400 Abwasserrohre', team: [['kabelratte', 9], ['rammeber', 9], ['hackerratte', 11]], reward: 800, gift: 'xpshare' } },
+    { n: 'Pilzgewoelbe', lv: [8, 14], size: 38, rooms: 9, pal: ['#221a2b', '#4a3d5c', '#5a3f7a', '#8a5fb5'], wild: [['pilzdachs', 22], ['giftfrosch', 12], ['gluehkaefer', 22], ['grabmaulwurf', 22], ['netzspinne', 22]], trainers: 4,
+      boss: { n: 'Die Sporenmutter', t: 'Hat 12 Millionen Kinder. Alle Pilze.', team: [['gluehkaefer', 15], ['netzspinne', 15], ['giftfrosch', 16], ['sporendachs', 18]], reward: 1500 } },
+    { n: 'Neon-Basar', lv: [14, 20], size: 42, rooms: 10, pal: ['#1a1030', '#3d2a6b', '#2a5a7a', '#ff4fd8'], wild: [['neongecko', 20], ['turbohamster', 18], ['funkenigel', 20], ['tresorbaer', 18], ['schatzkraehe', 20], ['kristallfuchs', 1]], trainers: 5,
+      boss: { n: 'Auktionator Fiedel', t: 'Verkauft Kriecher an den Meistbietenden', team: [['laufradhamster', 21], ['tresorbaer', 21], ['teslaigel', 22], ['schatzkraehe', 23]], reward: 2400 } },
+    { n: 'Versunkenes Labor', lv: [20, 27], size: 44, rooms: 10, pal: ['#0f2230', '#22506b', '#1f7a8a', '#5fe6ff'], wild: [['laborlotl', 22], ['kanalhai', 20], ['lavamolch', 18], ['glibberschnecke', 12], ['panzerschnecke', 10], ['hackerratte', 18]], trainers: 5,
+      boss: { n: 'Doktor Ampulla', t: 'Klont Biester. Schlecht.', team: [['panzerschnecke', 27], ['magmamolch', 28], ['hackerratte', 28], ['mutalotl', 30]], reward: 3200 } },
+    { n: 'Uhrwerk-Archiv', lv: [27, 34], size: 46, rooms: 11, pal: ['#2a2014', '#5a4630', '#7a6a3a', '#d4af37'], wild: [['zeiteule', 20], ['flatterlinse', 18], ['schleierkatze', 18], ['drohnentaube', 16], ['nachtsonar', 12], ['tresorbaer', 16], ['hologrammpfau', 1]], trainers: 6,
+      boss: { n: 'Archivarin Sekunda', t: 'Hat die Zeit angehalten, um puenktlich zu sein', team: [['nachtsonar', 34], ['phantomkatze', 35], ['safeknacker', 35], ['uhrwerkuhu', 37]], reward: 4200 } },
+    { n: 'Glutschmiede', lv: [33, 41], size: 48, rooms: 11, pal: ['#2b120a', '#6b2a12', '#8a4a1a', '#ff7a1f'], wild: [['lavamolch', 18], ['magmamolch', 14], ['rammeber', 14], ['bulldozerkeiler', 12], ['bohrmaulwurf', 16], ['teslaigel', 14], ['schrankgorilla', 12]], trainers: 6,
+      boss: { n: 'Schmiedemeister Ambos', t: 'Hat aus Prinzip nie gelaechelt', team: [['bulldozerkeiler', 41], ['teslaigel', 41], ['bohrmaulwurf', 42], ['magmamolch', 42], ['silberruecken', 44]], reward: 5500 } },
+    { n: 'Schattenboerse', lv: [40, 48], size: 50, rooms: 12, pal: ['#100c18', '#2a2040', '#3a2a5a', '#c084ff'], wild: [['phantomkatze', 16], ['juwelenrabe', 16], ['glasfaserspinne', 16], ['schrankgorilla', 14], ['reklamegecko', 14], ['sporendachs', 14], ['kristallfuchs', 2], ['hologrammpfau', 2]], trainers: 7,
+      boss: { n: 'Madame Kurs', t: 'Wettet gegen dich. Immer.', team: [['juwelenrabe', 48], ['glasfaserspinne', 48], ['reklamegecko', 49], ['safeknacker', 50], ['phantomkatze', 51]], reward: 7000 } },
+    { n: 'Studio Null', lv: [47, 55], size: 52, rooms: 12, pal: ['#0a0a12', '#26263a', '#3a3a5a', '#ffe23a'], wild: [['silberruecken', 12], ['kloakenhai', 14], ['leuchtturmkaefer', 14], ['systemratte', 14], ['mutalotl', 14], ['uhrwerkuhu', 14], ['hologrammpfau', 4], ['kristallfuchs', 4]], trainers: 8,
+      boss: { n: 'Der Showmaster', t: 'Die Stimme aus dem Lautsprecher. Endlich mit Gesicht.', team: [['systemratte', 56], ['kloakenhai', 56], ['leuchtturmkaefer', 57], ['silberruecken', 57], ['kristallfuchs', 58], ['hologrammpfau', 60]], reward: 12000, final: 1 } }
+  ];
+
+  G.TRAINER_NAMES = ['Kriecherin Mo', 'Influencer Tobi', 'Zahnarzt Pelle', 'Oma Hildegard', 'Praktikant Jonas', 'Ex-Banker Rufus', 'Kriecher Nr. 4471', 'Streamerin Lux', 'Hausmeister Kalle', 'Tueftlerin Ines', 'Rentner Bodo', 'Hackerin Pixel', 'Taschendieb Vito', 'Notar Dr. Kees', 'Zwillinge Pi & Pa', 'Kellnerin Rosa', 'Bodybuilder Henk', 'Bibliothekarin Ute', 'Sicherheitschef Brandt', 'Erbin Valentina'];
+  G.TRAINER_LINES = [
+    'Ich brauche deine Punkte dringender als du!',
+    'Die Zuschauer lieben mich. Dich nicht.',
+    'Mein Sponsor zahlt pro Sieg. Nichts Persoenliches.',
+    'Ich war Steuerberater. Das hier ist entspannter.',
+    'Du siehst aus wie jemand, der leicht zu besiegen ist.',
+    'Wenn ich gewinne, kriege ich eine Lootbox!',
+    'Ich habe einen Plan. Er hat sieben Phasen.',
+    'Weisst du, wie viele Follower ich verliere, wenn ich verliere?'
+  ];
+
+  // Der Moderator gibt dem Spiel seinen Ton: sarkastisch, aber nie gemein gegenueber dem Spieler selbst.
+  G.ANNOUNCER = {
+    intro: [
+      'Willkommen, Kriecher! Die Oberflaeche ist gesperrt, die Kameras laufen, und du bist live in DIE TIEFE.',
+      'Regeln: Acht Etagen. Jede bewacht von einem Boss. Unten wartet der Ausgang. Vielleicht.',
+      'Du bist zwoelf, ein Genie und hast keinerlei Ausruestung. Perfekt fuer die Quote.',
+      'Waehle dein erstes Biest. Die Sponsoren beobachten dich.'
+    ],
+    floor: ['Neue Etage! Die Einschaltquote steigt. Deine Ueberlebenschance eher nicht.', 'Willkommen auf der naechsten Etage. Bitte nichts anfassen. Ausser alles.', 'Die Sponsoren haben gewettet, wie lange du hier ueberlebst. Die meisten sagen: kurz.'],
+    faint: ['Und unser Kriecher geht zu Boden! Die Sanitaeter-Drohnen schleppen dich in den Schutzraum.', 'Totalausfall! Die Zuschauer klatschen trotzdem. Aus Mitleid.', 'Das war... lehrreich. Fuer die anderen.'],
+    boss: ['Etagenboss besiegt! Die Treppe nach unten ist offen. Applaus vom Band!', 'Unglaublich! Unser Kriecher hat den Boss zerlegt. Die Sponsoren sind veraergert und beeindruckt.'],
+    safe: ['Schutzraum. Hier darf dich niemand angreifen. Steht so im Vertrag. Klein gedruckt.', 'Willkommen im Schutzraum. Heilung gratis, Ratschlaege auch, Mitgefuehl nicht.'],
+    catch: ['Gefangen! Ein neues Biest fuer dein Team. Es hat nicht zugestimmt, aber das sagt keiner.', 'Fang gelungen! Die Zuschauer jubeln. Das Biest weniger.'],
+    stairsLocked: ['Gesperrt. Der Etagenboss muss erst besiegt werden. Er ist irgendwo hier und sehr eitel.']
+  };
+
+  // Erfolge belohnen Erkundung statt nur Kampf und geben Lootkisten -- motiviert laengeres Spielen.
+  G.ACHIEVEMENTS = {
+    firstStep: { n: 'Erster Schritt', d: 'Du hast dich bewegt. Revolutionaer.', box: 'bronze' },
+    firstGrass: { n: 'Grasberuehrer', d: 'Du hast hohes Gras betreten. Die Natur ist entsetzt.', box: 'bronze' },
+    firstWin: { n: 'Erstes Blut', d: 'Erster Kampf gewonnen. Bitte nicht gleich uebermuetig werden.', box: 'bronze' },
+    firstCatch: { n: 'Sammler', d: 'Erstes Biest gefangen. Es heult nur noch ein bisschen.', box: 'silber' },
+    team4: { n: 'Rudel', d: 'Vier Biester im Team. Endlich jemand, der mit dir redet.', box: 'silber' },
+    team6: { n: 'Voller Kader', d: 'Sechs Biester. Die Gewerkschaft meldet sich.', box: 'gold' },
+    dex10: { n: 'Archivar', d: '10 Arten registriert.', box: 'silber' },
+    dex25: { n: 'Enzyklopaedie', d: '25 Arten registriert. Nerd.', box: 'gold' },
+    dex40: { n: 'Allwissend', d: '40 Arten registriert. Hast du Freunde?', box: 'gold' },
+    evolve: { n: 'Upgrade', d: 'Erste Entwicklung. Biologie ist ein Witz hier unten.', box: 'silber' },
+    crit: { n: 'Volltreffer', d: 'Kritischer Treffer. Die Wiederholung laeuft in Zeitlupe.', box: 'bronze' },
+    superEff: { n: 'Typen-Genie', d: 'Sehr effektiver Treffer. Du hast die Tabelle gelesen!', box: 'bronze' },
+    fainted: { n: 'Bodenkontakt', d: 'Zum ersten Mal K.O. gegangen. Willkommen im Club.', box: 'bronze' },
+    chest10: { n: 'Pluenderer', d: '10 Truhen geoeffnet. Die Moral bleibt verschlossen.', box: 'silber' },
+    trainer10: { n: 'Kopfgeldjaeger', d: '10 Kriecher besiegt.', box: 'gold' },
+    rich: { n: 'Neureich', d: '10.000 Muenzen besessen. Gib nicht alles fuer Kapseln aus.', box: 'gold' },
+    lvl50: { n: 'Veteran', d: 'Ein Biest hat Level 50 erreicht.', box: 'gold' },
+    rare: { n: 'Glueckspilz', d: 'Ein seltenes Biest gefangen. Die Quote explodiert.', box: 'gold' },
+    floor3: { n: 'Tiefgang', d: 'Etage 3 erreicht.', box: 'silber' },
+    floor5: { n: 'Abstieg', d: 'Etage 5 erreicht. Die Luft wird duenner. Und weirder.', box: 'gold' },
+    floor8: { n: 'Studio Null', d: 'Die letzte Etage. Das Licht hier ist unangenehm hell.', box: 'gold' },
+    champion: { n: 'Showstopper', d: 'Der Showmaster ist besiegt. Die Kameras gehoeren dir.', box: 'gold' },
+    legend: { n: 'Leviathan', d: 'Den Abgrundwal gefangen. Er sieht dich respektvoll an.', box: 'gold' },
+    bonus5: { n: 'Endlosschleife', d: 'Bonusetage 5 erreicht. Die Show endet nie.', box: 'gold' }
+  };
+  G.LOOTBOX = {
+    bronze: { n: 'Bronze-Lootbox', pool: [['trank', 3], ['kapsel', 3], ['allheil', 1], ['money', 300]] },
+    silber: { n: 'Silber-Lootbox', pool: [['supertrank', 2], ['superkapsel', 2], ['beleber', 1], ['aether', 1], ['money', 900]] },
+    gold: { n: 'Gold-Lootbox', pool: [['hypertrank', 2], ['hyperkapsel', 2], ['beleber', 2], ['sonderbonbon', 1], ['money', 2500]] }
+  };
+
+})(typeof globalThis !== 'undefined' ? (globalThis.G = globalThis.G || {}) : (window.G = window.G || {}));
+</script>
+<script>// Reine Spiellogik ohne DOM-Zugriff: so laesst sie sich in Node testen und im Browser identisch nutzen.
+(function (G) {
+  'use strict';
+
+  // Deterministischer Zufall, damit dieselbe Etage nach dem Neuladen gleich aussieht.
+  G.rng = function (seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+  G.ri = function (r, a, b) { return a + Math.floor(r() * (b - a + 1)); };
+  G.pick = function (r, arr) { return arr[Math.floor(r() * arr.length)]; };
+  G.weighted = function (r, list) {
+    var tot = 0, i;
+    for (i = 0; i < list.length; i++) tot += list[i][1];
+    var x = r() * tot;
+    for (i = 0; i < list.length; i++) { x -= list[i][1]; if (x < 0) return list[i][0]; }
+    return list[list.length - 1][0];
+  };
+
+  var uidCounter = 1;
+  G.xpFor = function (lv) { return lv <= 1 ? 0 : Math.floor(Math.pow(lv, 3) * 0.8); };
+
+  G.stats = function (m) {
+    var s = G.SPECIES_BY_ID[m.sid].s, iv = m.iv, lv = m.lv;
+    function st(i) { return Math.floor((2 * s[i] + iv[i]) * lv / 100) + 5; }
+    return {
+      hp: Math.floor((2 * s[0] + iv[0]) * lv / 100) + lv + 10,
+      atk: st(1), def: st(2), spd: st(3)
+    };
+  };
+
+  G.movesAtLevel = function (sid, lv) {
+    var ls = G.SPECIES_BY_ID[sid].learn, out = [];
+    ls.forEach(function (e) { if (e[0] <= lv) out.push(e[1]); });
+    return out.slice(-4);
+  };
+
+  G.makeMon = function (sid, lv, r) {
+    r = r || Math.random;
+    if (!G.SPECIES_BY_ID[sid]) throw new Error('Unbekannte Art ' + sid);
+    var m = {
+      uid: Date.now().toString(36) + (uidCounter++).toString(36) + Math.floor(r() * 1e6).toString(36),
+      sid: sid, lv: lv, xp: G.xpFor(lv),
+      iv: [G.ri(r, 0, 15), G.ri(r, 0, 15), G.ri(r, 0, 15), G.ri(r, 0, 15)],
+      st: null, slp: 0, pending: [], nick: null
+    };
+    m.moves = G.movesAtLevel(sid, lv).map(function (id) { return { id: id, pp: G.MOVES[id].pp }; });
+    m.hp = G.stats(m).hp;
+    return m;
+  };
+
+  G.monName = function (m) { return m.nick || G.SPECIES_BY_ID[m.sid].n; };
+
+  G.typeMult = function (mt, defTypes) {
+    var m = 1;
+    defTypes.forEach(function (t) { var v = G.CHART[mt][t]; if (v !== undefined) m *= v; });
+    return m;
+  };
+
+  function stageMul(s) { return s >= 0 ? (2 + s) / 2 : 2 / (2 - s); }
+
+  G.damage = function (att, def, moveId, r, sa, sd) {
+    var mv = G.MOVES[moveId];
+    var A = G.stats(att), D = G.stats(def);
+    var atk = A.atk * stageMul((sa && sa.atk) || 0) * (att.st === 'brn' ? 0.5 : 1);
+    var dfn = D.def * stageMul((sd && sd.def) || 0);
+    var spA = G.SPECIES_BY_ID[att.sid], spD = G.SPECIES_BY_ID[def.sid];
+    var stab = spA.types.indexOf(mv.t) >= 0 ? 1.5 : 1;
+    var mult = G.typeMult(mv.t, spD.types);
+    var crit = r() < 1 / 16;
+    var base = ((2 * att.lv / 5 + 2) * mv.p * atk / dfn) / 50 + 2;
+    var dmg = Math.floor(base * stab * mult * (crit ? 1.5 : 1) * (0.85 + r() * 0.15));
+    if (mult > 0) dmg = Math.max(1, dmg);
+    return { dmg: dmg, mult: mult, crit: crit };
+  };
+
+  // Gibt Ereignisse zurueck statt Text direkt anzuzeigen; das UI spielt sie nacheinander ab.
+  G.gainXp = function (m, amt) {
+    var ev = [], sp = G.SPECIES_BY_ID[m.sid];
+    if (m.lv >= 100) return ev;
+    m.xp += amt;
+    ev.push({ m: G.monName(m) + ' erhaelt ' + amt + ' EP.' });
+    while (m.lv < 100 && m.xp >= G.xpFor(m.lv + 1)) {
+      var before = G.stats(m).hp;
+      m.lv++;
+      m.hp += G.stats(m).hp - before;
+      ev.push({ sfx: 'levelup' }, { m: G.monName(m) + ' erreicht Level ' + m.lv + '!' }, { lvl: m.uid });
+      sp.learn.forEach(function (e) {
+        if (e[0] === m.lv && !m.moves.some(function (x) { return x.id === e[1]; })) {
+          if (m.moves.length < 4) {
+            m.moves.push({ id: e[1], pp: G.MOVES[e[1]].pp });
+            ev.push({ m: G.monName(m) + ' lernt ' + G.MOVES[e[1]].n + '!' });
+          } else if (m.pending.indexOf(e[1]) < 0) {
+            m.pending.push(e[1]);
+          }
+        }
+      });
+    }
+    return ev;
+  };
+
+  G.evoTarget = function (m) {
+    var e = G.SPECIES_BY_ID[m.sid].evo;
+    return e && m.lv >= e[1] ? e[0] : null;
+  };
+  G.evolve = function (m) {
+    var to = G.evoTarget(m);
+    if (!to) return null;
+    var before = G.stats(m).hp;
+    m.sid = to;
+    m.hp = Math.max(1, m.hp + G.stats(m).hp - before);
+    return to;
+  };
+
+  G.catchChance = function (m, ball) {
+    var max = G.stats(m).hp, sp = G.SPECIES_BY_ID[m.sid];
+    var stBonus = m.st === 'slp' ? 2 : m.st ? 1.5 : 1;
+    var a = ((3 * max - 2 * m.hp) * sp.cr * ball * stBonus) / (3 * max);
+    return Math.min(1, a / 255);
+  };
+
+  G.isAlive = function (m) { return m.hp > 0; };
+  G.healFull = function (m) {
+    m.hp = G.stats(m).hp; m.st = null; m.slp = 0; m._fainted = false;
+    m.moves.forEach(function (x) { x.pp = G.MOVES[x.id].pp; });
+  };
+
+  // ---------------- Kampf ----------------
+  G.newBattle = function (kind, pTeam, fTeam, opts) {
+    opts = opts || {};
+    pTeam.forEach(function (m) { m._fainted = !G.isAlive(m); });
+    var pi = 0;
+    while (pi < pTeam.length && !G.isAlive(pTeam[pi])) pi++;
+    return {
+      kind: kind, p: pTeam, f: fTeam, pi: pi, fi: 0,
+      stg: { p: { atk: 0, def: 0, spd: 0 }, f: { atk: 0, def: 0, spd: 0 } },
+      runTries: 0, over: null, needSwitch: false, xpShare: !!opts.xpShare,
+      name: opts.name || null, reward: opts.reward || 0, boss: !!opts.boss, money: 0,
+      participants: {}, crit: false, superEff: false
+    };
+  };
+
+  function act(b, side) { return side === 'p' ? b.p[b.pi] : b.f[b.fi]; }
+  function other(side) { return side === 'p' ? 'f' : 'p'; }
+  function label(b, side) {
+    var m = act(b, side), n = G.monName(m);
+    if (side === 'p') return n;
+    return (b.kind === 'wild' ? 'Wildes ' : 'Gegnerisches ') + n;
+  }
+  function effSpd(b, side) {
+    var m = act(b, side);
+    return G.stats(m).spd * stageMul(b.stg[side].spd) * (m.st === 'par' ? 0.5 : 1);
+  }
+  function hpEv(b, side) { var m = act(b, side); return { hp: side, v: m.hp, max: G.stats(m).hp }; }
+
+  var STAT_N = { atk: 'Angriff', def: 'Verteidigung', spd: 'Initiative' };
+  var ST_N = { brn: 'verbrannt', psn: 'vergiftet', par: 'gelaehmt', slp: 'eingeschlafen' };
+
+  function applyStages(b, side, ch, ev) {
+    Object.keys(ch).forEach(function (k) {
+      var cur = b.stg[side][k], nv = Math.max(-6, Math.min(6, cur + ch[k]));
+      if (nv === cur) { ev.push({ m: 'Bei ' + label(b, side) + ' passiert nichts mehr.' }); return; }
+      b.stg[side][k] = nv;
+      ev.push({ sfx: ch[k] > 0 ? 'buff' : 'debuff' }, { m: label(b, side) + ': ' + STAT_N[k] + (ch[k] > 0 ? ' steigt' : ' sinkt') + (Math.abs(ch[k]) > 1 ? ' stark' : '') + '!' });
+    });
+  }
+  function applyStatus(b, side, st, ev, r, silentFail) {
+    var m = act(b, side);
+    if (m.st) { if (!silentFail) ev.push({ m: label(b, side) + ' hat bereits einen Zustand.' }); return; }
+    var types = G.SPECIES_BY_ID[m.sid].types;
+    if ((st === 'brn' && types.indexOf('FEUER') >= 0) || (st === 'par' && types.indexOf('BLITZ') >= 0) || (st === 'psn' && types.indexOf('TECH') >= 0)) {
+      if (!silentFail) ev.push({ m: label(b, side) + ' ist immun.' }); return;
+    }
+    m.st = st;
+    if (st === 'slp') m.slp = G.ri(r, 1, 3);
+    ev.push({ sfx: 'status' }, { m: label(b, side) + ' ist ' + ST_N[st] + '!' }, { stUp: side });
+  }
+
+  function doMove(b, side, idx, r, ev) {
+    var a = act(b, side), d = act(b, other(side));
+    if (!G.isAlive(a) || !G.isAlive(d)) return;
+    if (a.st === 'slp') {
+      a.slp--;
+      if (a.slp > 0) { ev.push({ m: label(b, side) + ' schlaeft tief und fest.' }); return; }
+      a.st = null; ev.push({ m: label(b, side) + ' wacht auf!' }, { stUp: side });
+    }
+    if (a.st === 'par' && r() < 0.25) { ev.push({ m: label(b, side) + ' ist gelaehmt und kann sich nicht bewegen!' }); return; }
+    var slot = a.moves[idx], mid;
+    if (!slot || slot.pp <= 0) {
+      mid = 'kratzer';
+      ev.push({ m: label(b, side) + ' hat keine AP mehr und kratzt verzweifelt.' });
+    } else { mid = slot.id; slot.pp--; }
+    var mv = G.MOVES[mid], eff = mv.eff || {};
+    ev.push({ m: label(b, side) + ' setzt ' + mv.n + ' ein!' }, { anim: side, t: mv.t });
+    var targetsFoe = mv.p > 0 || eff.foe || (eff.st && !eff.self);
+    if (targetsFoe && r() * 100 >= mv.a) { ev.push({ sfx: 'miss' }, { m: 'Daneben!' }); return; }
+    if (mv.p > 0) {
+      var res = G.damage(a, d, mid, r, b.stg[side], b.stg[other(side)]);
+      d.hp = Math.max(0, d.hp - res.dmg);
+      ev.push({ sfx: res.crit ? 'crit' : res.mult > 1 ? 'super' : res.mult < 1 ? 'weak' : 'hit' }, { hit: other(side) }, hpEv(b, other(side)));
+      if (res.crit) { ev.push({ m: 'Kritischer Treffer!' }); if (side === 'p') b.crit = true; }
+      if (res.mult > 1) { ev.push({ m: 'Das ist sehr effektiv!' }); if (side === 'p') b.superEff = true; }
+      else if (res.mult < 1) ev.push({ m: 'Das ist nicht sehr effektiv...' });
+      if (eff.drain && res.dmg > 0) {
+        var max = G.stats(a).hp, h = Math.max(1, Math.floor(res.dmg * eff.drain));
+        a.hp = Math.min(max, a.hp + h);
+        ev.push(hpEv(b, side), { m: label(b, side) + ' saugt Energie ab.' });
+      }
+      if (G.isAlive(d)) {
+        var ch = eff.ch === undefined ? 1 : eff.ch;
+        if (eff.st && r() < ch) applyStatus(b, other(side), eff.st, ev, r, true);
+        if (eff.foe && r() < ch) applyStages(b, other(side), eff.foe, ev);
+      }
+    } else {
+      if (eff.self) applyStages(b, side, eff.self, ev);
+      if (eff.foe) applyStages(b, other(side), eff.foe, ev);
+      if (eff.st) applyStatus(b, other(side), eff.st, ev, r, false);
+      if (eff.heal) {
+        var mx = G.stats(a).hp;
+        if (a.hp >= mx) ev.push({ m: 'KP sind bereits voll.' });
+        else { a.hp = Math.min(mx, a.hp + Math.floor(mx * eff.heal)); ev.push({ sfx: 'heal' }, hpEv(b, side), { m: label(b, side) + ' erholt sich.' }); }
+      }
+    }
+  }
+
+  G.xpYield = function (b, foe) {
+    var y = Math.floor(G.SPECIES_BY_ID[foe.sid].xp * foe.lv / 6 * (b.kind === 'wild' ? 1 : 1.5));
+    return Math.max(1, y);
+  };
+
+  function handleFaints(b, ev) {
+    var f = act(b, 'f'), p = act(b, 'p');
+    if (f && !G.isAlive(f) && !f._fainted) {
+      f._fainted = true;
+      ev.push({ sfx: 'faint' }, { faint: 'f' }, { m: label(b, 'f') + ' ist besiegt!' });
+      var y = G.xpYield(b, f);
+      var parts = Object.keys(b.participants).map(function (u) { return b.p.filter(function (m) { return m.uid === u; })[0]; }).filter(function (m) { return m && G.isAlive(m); });
+      if (parts.length === 0 && G.isAlive(p)) parts = [p];
+      var share = Math.max(1, Math.floor(y / parts.length));
+      parts.forEach(function (m) { ev.push.apply(ev, G.gainXp(m, share)); });
+      if (b.xpShare) {
+        b.p.forEach(function (m) { if (G.isAlive(m) && parts.indexOf(m) < 0) ev.push.apply(ev, G.gainXp(m, Math.max(1, Math.floor(y * 0.8)))); });
+      }
+      var next = -1;
+      for (var i = 0; i < b.f.length; i++) if (G.isAlive(b.f[i])) { next = i; break; }
+      if (next >= 0) {
+        b.fi = next; b.stg.f = { atk: 0, def: 0, spd: 0 };
+        b.participants = {}; if (G.isAlive(act(b, 'p'))) b.participants[act(b, 'p').uid] = 1;
+        ev.push({ m: (b.name || 'Der Gegner') + ' schickt ' + G.monName(b.f[next]) + ' in den Kampf!' }, { sw: 'f' }, hpEv(b, 'f'));
+      } else {
+        var money = b.kind === 'wild' ? f.lv * 6 : (b.reward || b.f.reduce(function (s, m) { return s + m.lv * 40; }, 0));
+        b.money = money;
+        b.over = 'win';
+        ev.push({ sfx: 'win' }, { m: 'Du hast gewonnen! +' + money + ' Muenzen.' }, { end: 'win' });
+        return;
+      }
+    }
+    p = act(b, 'p');
+    if (p && !G.isAlive(p) && !p._fainted) {
+      p._fainted = true;
+      ev.push({ sfx: 'faint' }, { faint: 'p' }, { m: G.monName(p) + ' ist besiegt!' });
+      if (b.p.some(G.isAlive)) { b.needSwitch = true; ev.push({ need: 'switch' }); }
+      else { b.over = 'lose'; ev.push({ m: 'Du hast keine kampffaehigen Biester mehr...' }, { end: 'lose' }); }
+    }
+  }
+
+  function endOfTurn(b, r, ev) {
+    ['p', 'f'].forEach(function (side) {
+      var m = act(b, side);
+      if (b.over || !m || !G.isAlive(m)) return;
+      if (m.st === 'brn' || m.st === 'psn') {
+        var max = G.stats(m).hp, d = Math.max(1, Math.floor(max / (m.st === 'brn' ? 16 : 10)));
+        m.hp = Math.max(0, m.hp - d);
+        ev.push({ m: label(b, side) + (m.st === 'brn' ? ' leidet unter Verbrennungen.' : ' leidet unter Gift.') }, hpEv(b, side));
+      }
+    });
+    handleFaints(b, ev);
+  }
+
+  G.aiChoose = function (b, r) {
+    var m = act(b, 'f'), d = act(b, 'p'), best = 0, bestS = -1;
+    var smart = b.kind !== 'wild';
+    m.moves.forEach(function (slot, i) {
+      if (slot.pp <= 0) return;
+      var mv = G.MOVES[slot.id], e = mv.eff || {}, s = 0;
+      if (mv.p > 0) {
+        s = mv.p * G.typeMult(mv.t, G.SPECIES_BY_ID[d.sid].types) * (G.SPECIES_BY_ID[m.sid].types.indexOf(mv.t) >= 0 ? 1.5 : 1) * mv.a / 100;
+      } else if (e.heal) {
+        s = m.hp < G.stats(m).hp * 0.4 ? 120 : 0;
+      } else if (e.st) {
+        s = d.st ? 0 : 55;
+      } else if (e.self) {
+        s = b.stg.f[Object.keys(e.self)[0]] < 2 ? 40 : 0;
+      } else if (e.foe) {
+        s = b.stg.p[Object.keys(e.foe)[0]] > -2 ? 30 : 0;
+      }
+      s *= smart ? (0.9 + r() * 0.2) : (0.5 + r());
+      if (s > bestS) { bestS = s; best = i; }
+    });
+    return best;
+  };
+
+  // Aktion des Spielers: {type:'move',idx} | {type:'switch',idx} | {type:'item',id,target} | {type:'catch',id} | {type:'run'}
+  G.turn = function (b, action, r, bag) {
+    var ev = [];
+    if (b.over) return ev;
+    var p = act(b, 'p');
+    var fUid = act(b, 'f').uid, pUid = p.uid;
+    var foeIdx = G.aiChoose(b, r);
+    b.participants[p.uid] = 1;
+
+    function foeActs() {
+      if (b.over || act(b, 'f').uid !== fUid) return;
+      doMove(b, 'f', foeIdx, r, ev); handleFaints(b, ev);
+    }
+
+    if (action.type === 'run') {
+      if (b.kind !== 'wild') { ev.push({ m: 'Vor Publikum flieht man nicht aus einem Kriecher-Duell!' }); return ev; }
+      b.runTries++;
+      var ps = effSpd(b, 'p'), fs = effSpd(b, 'f');
+      var chance = action.item ? 1 : Math.max(0.35, Math.min(1, 0.55 + (ps - fs) / (2 * fs) + 0.15 * (b.runTries - 1)));
+      if (r() < chance) { b.over = 'run'; ev.push({ sfx: 'run' }, { m: 'Du bist entkommen!' }, { end: 'run' }); return ev; }
+      ev.push({ m: 'Flucht gescheitert!' });
+      foeActs(); if (!b.over) endOfTurn(b, r, ev); return ev;
+    }
+    if (action.type === 'switch') {
+      var nm = b.p[action.idx];
+      if (!nm || !G.isAlive(nm) || action.idx === b.pi) { ev.push({ m: 'Das geht nicht.' }); return ev; }
+      ev.push({ m: G.monName(p) + ', komm zurueck!' });
+      b.pi = action.idx; b.stg.p = { atk: 0, def: 0, spd: 0 }; b.participants[nm.uid] = 1;
+      ev.push({ m: 'Los, ' + G.monName(nm) + '!' }, { sw: 'p' }, hpEv(b, 'p'));
+      pUid = nm.uid;
+      foeActs(); if (!b.over) endOfTurn(b, r, ev); return ev;
+    }
+    if (action.type === 'item') {
+      var it = G.ITEMS[action.id], t = b.p[action.target];
+      var res = G.useItem(action.id, t);
+      if (!res.ok) { ev.push({ m: res.msg }); return ev; }
+      if (bag) bag[action.id]--;
+      ev.push({ sfx: 'heal' }, { m: 'Du benutzt ' + it.n + '. ' + res.msg });
+      if (action.target === b.pi) { ev.push(hpEv(b, 'p'), { stUp: 'p' }); if (t._fainted && G.isAlive(t)) t._fainted = false; }
+      else if (G.isAlive(t)) t._fainted = false;
+      foeActs(); if (!b.over) endOfTurn(b, r, ev); return ev;
+    }
+    if (action.type === 'catch') {
+      if (b.kind !== 'wild') { ev.push({ m: 'Fremde Biester klauen? Nicht vor laufender Kamera.' }); return ev; }
+      var ball = G.ITEMS[action.id];
+      if (bag) bag[action.id]--;
+      var f = act(b, 'f');
+      var c = G.catchChance(f, ball.v);
+      // Drei Wackler wie bei einem Tresorschloss: die Teilwahrscheinlichkeit pro Wackler ergibt c insgesamt.
+      var per = Math.pow(c, 1 / 3), shakes = 0;
+      while (shakes < 3 && r() < per) shakes++;
+      ev.push({ m: 'Du wirfst eine ' + ball.n + '!' }, { sfx: 'throw' }, { ball: 1 });
+      for (var s = 0; s < Math.min(shakes, 3); s++) ev.push({ sfx: 'shake' }, { shake: s });
+      if (shakes >= 3) {
+        b.over = 'catch';
+        ev.push({ sfx: 'catch' }, { m: 'Erwischt! ' + G.monName(f) + ' wurde gefangen!' }, { end: 'catch' });
+        return ev;
+      }
+      ev.push({ unball: 1 }, { m: ['Mist! Es hat sich befreit!', 'Fast! Nur noch ein Wackler!', 'Argh! So knapp!'][Math.min(shakes, 2)] });
+      foeActs(); if (!b.over) endOfTurn(b, r, ev); return ev;
+    }
+
+    // Angriff: Reihenfolge nach effektiver Initiative
+    var pFirst = effSpd(b, 'p') > effSpd(b, 'f') || (effSpd(b, 'p') === effSpd(b, 'f') && r() < 0.5);
+    if (pFirst) {
+      doMove(b, 'p', action.idx, r, ev); handleFaints(b, ev);
+      foeActs();
+    } else {
+      doMove(b, 'f', foeIdx, r, ev); handleFaints(b, ev);
+      if (!b.over && act(b, 'p').uid === pUid && G.isAlive(act(b, 'p')) && act(b, 'f').uid === fUid) { doMove(b, 'p', action.idx, r, ev); handleFaints(b, ev); }
+    }
+    if (!b.over) endOfTurn(b, r, ev);
+    return ev;
+  };
+
+  G.forceSwitch = function (b, idx) {
+    var m = b.p[idx];
+    if (!m || !G.isAlive(m)) return [{ m: 'Das geht nicht.' }];
+    b.pi = idx; b.needSwitch = false; b.stg.p = { atk: 0, def: 0, spd: 0 }; b.participants[m.uid] = 1;
+    return [{ m: 'Los, ' + G.monName(m) + '!' }, { sw: 'p' }, { hp: 'p', v: m.hp, max: G.stats(m).hp }];
+  };
+
+  G.useItem = function (id, m) {
+    var it = G.ITEMS[id];
+    if (!it || !m) return { ok: false, msg: 'Kein Ziel.' };
+    var max = G.stats(m).hp;
+    if (it.kind === 'heal') {
+      if (!G.isAlive(m)) return { ok: false, msg: 'Das hilft einem besiegten Biest nicht.' };
+      if (m.hp >= max) return { ok: false, msg: 'KP sind bereits voll.' };
+      var before = m.hp; m.hp = Math.min(max, m.hp + it.v);
+      return { ok: true, msg: G.monName(m) + ' erhaelt ' + (m.hp - before) + ' KP.' };
+    }
+    if (it.kind === 'revive') {
+      if (G.isAlive(m)) return { ok: false, msg: 'Das Biest ist nicht besiegt.' };
+      m.hp = Math.floor(max * it.v); m.st = null; m._fainted = false;
+      return { ok: true, msg: G.monName(m) + ' ist wieder kampfbereit!' };
+    }
+    if (it.kind === 'cure') {
+      if (!m.st) return { ok: false, msg: 'Kein Zustand zu heilen.' };
+      m.st = null; m.slp = 0; return { ok: true, msg: G.monName(m) + ' ist geheilt.' };
+    }
+    if (it.kind === 'pp') {
+      m.moves.forEach(function (x) { x.pp = Math.min(G.MOVES[x.id].pp, x.pp + it.v); });
+      return { ok: true, msg: 'Die AP von ' + G.monName(m) + ' wurden aufgefuellt.' };
+    }
+    if (it.kind === 'candy') {
+      if (m.lv >= 100) return { ok: false, msg: 'Schon maximal.' };
+      G.gainXp(m, G.xpFor(m.lv + 1) - m.xp);
+      return { ok: true, msg: G.monName(m) + ' ist jetzt Level ' + m.lv + '!' };
+    }
+    return { ok: false, msg: 'Das kann hier nicht benutzt werden.' };
+  };
+
+  // ---------------- Etagen ----------------
+  G.floorDef = function (idx) {
+    if (idx < G.FLOORS.length) return G.FLOORS[idx];
+    // Bonusetagen nach dem Finale halten das Spiel offen, ohne neue Inhalte zu benoetigen.
+    var k = idx - G.FLOORS.length + 1, base = G.FLOORS[G.FLOORS.length - 1];
+    var r = G.rng(9000 + idx);
+    var all = G.SPECIES.filter(function (s) { return !s.starter && !s.legend; });
+    var wild = [];
+    for (var i = 0; i < 8; i++) wild.push([G.pick(r, all).id, G.ri(r, 5, 15)]);
+    var lv0 = 55 + k * 3;
+    var team = [];
+    for (var j = 0; j < 6; j++) team.push([G.pick(r, all).id, Math.min(100, lv0 + 6 + j)]);
+    return { n: 'Bonusetage ' + k, lv: [lv0, Math.min(100, lv0 + 6)], size: 50, rooms: 12, pal: G.pick(r, G.FLOORS).pal, wild: wild, trainers: 8, bonus: k,
+      boss: { n: 'Champion-Echo ' + k, t: 'Eine Aufzeichnung frueherer Sieger', team: team, reward: 8000 + k * 1500 } };
+  };
+
+  // Kacheln: 0 Wand, 1 Boden, 2 Gras, 3 Treppe, 5 Schutzraumboden, 6 Deko-Saeule
+  G.genFloor = function (idx, seed) {
+    var fd = G.floorDef(idx), r = G.rng((seed * 31 + idx * 7919) >>> 0);
+    var W = fd.size, H = fd.size, t = new Array(W * H).fill(0);
+    function set(x, y, v) { if (x > 0 && y > 0 && x < W - 1 && y < H - 1) t[y * W + x] = v; }
+    var rooms = [], tries = 0;
+    while (rooms.length < fd.rooms && tries < 2000) {
+      tries++;
+      var rw = G.ri(r, 6, 11), rh = G.ri(r, 6, 10);
+      var rx = G.ri(r, 2, W - rw - 3), ry = G.ri(r, 2, H - rh - 3);
+      var ok = rooms.every(function (o) { return rx + rw + 2 < o.x || o.x + o.w + 2 < rx || ry + rh + 2 < o.y || o.y + o.h + 2 < ry; });
+      if (ok) rooms.push({ x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) });
+    }
+    rooms.forEach(function (o) { for (var y = o.y; y < o.y + o.h; y++) for (var x = o.x; x < o.x + o.w; x++) set(x, y, 1); });
+    function corridor(a, b2) {
+      var x = a.cx, y = a.cy, horizFirst = r() < 0.5;
+      function carve(xx, yy) { if (t[yy * W + xx] === 0) set(xx, yy, 1); }
+      if (horizFirst) { while (x !== b2.cx) { carve(x, y); x += x < b2.cx ? 1 : -1; } while (y !== b2.cy) { carve(x, y); y += y < b2.cy ? 1 : -1; } }
+      else { while (y !== b2.cy) { carve(x, y); y += y < b2.cy ? 1 : -1; } while (x !== b2.cx) { carve(x, y); x += x < b2.cx ? 1 : -1; } }
+      carve(x, y);
+    }
+    // Minimaler Spannbaum nach Distanz, dann wenige Zusatzwege fuer Rundgaenge
+    var conn = [0], rest = rooms.map(function (_, i) { return i; }).slice(1);
+    while (rest.length) {
+      var bi = -1, bj = -1, bd = 1e9;
+      conn.forEach(function (i) { rest.forEach(function (j) { var d = Math.abs(rooms[i].cx - rooms[j].cx) + Math.abs(rooms[i].cy - rooms[j].cy); if (d < bd) { bd = d; bi = i; bj = j; } }); });
+      corridor(rooms[bi], rooms[bj]); conn.push(bj); rest.splice(rest.indexOf(bj), 1);
+    }
+    for (var e = 0; e < 2; e++) corridor(G.pick(r, rooms), G.pick(r, rooms));
+
+    // Rollen: Start, Schutzraum (nahe Start), Bossraum (am weitesten weg)
+    var start = rooms[0];
+    var byDist = rooms.slice(1).sort(function (a, b2) { return (Math.abs(a.cx - start.cx) + Math.abs(a.cy - start.cy)) - (Math.abs(b2.cx - start.cx) + Math.abs(b2.cy - start.cy)); });
+    var safe = byDist[0], boss = byDist[byDist.length - 1];
+    var normal = rooms.filter(function (o) { return o !== start && o !== safe && o !== boss; });
+    for (var y = safe.y; y < safe.y + safe.h; y++) for (var x = safe.x; x < safe.x + safe.w; x++) set(x, y, 5);
+
+    // Gras: Kleckse in normalen Raeumen und Startraum-fern, damit Begegnungen bewusst gewaehlt werden koennen
+    normal.forEach(function (o) {
+      var blobs = G.ri(r, 1, 3);
+      for (var k = 0; k < blobs; k++) {
+        var bx = G.ri(r, o.x, o.x + o.w - 1), by = G.ri(r, o.y, o.y + o.h - 1), rad = G.ri(r, 2, 3);
+        for (var yy = by - rad; yy <= by + rad; yy++) for (var xx = bx - rad; xx <= bx + rad; xx++) {
+          if (xx >= o.x && xx < o.x + o.w && yy >= o.y && yy < o.y + o.h && (xx - bx) * (xx - bx) + (yy - by) * (yy - by) <= rad * rad + 1) set(xx, yy, 2);
+        }
+      }
+    });
+    // Auch einige Gaenge bekommen Gras, damit der Weg zum Boss nicht kampffrei ist
+    for (var i2 = 0; i2 < W * H; i2++) if (t[i2] === 1 && r() < 0.08) {
+      var cx = i2 % W, cy = (i2 / W) | 0;
+      var inRoom = rooms.some(function (o) { return cx >= o.x && cx < o.x + o.w && cy >= o.y && cy < o.y + o.h; });
+      if (!inRoom) t[i2] = 2;
+    }
+
+    var ents = [], occupied = {};
+    function key(x, y) { return x + ',' + y; }
+    function freeSpot(o, avoidCenter) {
+      for (var n = 0; n < 200; n++) {
+        var x = G.ri(r, o.x + 1, o.x + o.w - 2), y = G.ri(r, o.y + 1, o.y + o.h - 2);
+        if (avoidCenter && (x === o.cx || y === o.cy)) continue;
+        var bad = false;
+        for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) if (occupied[key(x + dx, y + dy)]) bad = true;
+        if (!bad) { occupied[key(x, y)] = 1; return { x: x, y: y }; }
+      }
+      return null;
+    }
+    // Startposition zuerst reservieren
+    var sp0 = { x: start.cx, y: start.cy }; occupied[key(sp0.x, sp0.y)] = 1;
+    // Schutzraum-NPCs an festen Positionen relativ zur Raummitte
+    var sNpc = [['heal', -2, -1], ['shop', 2, -1], ['pc', 0, -2], ['host', 0, 2]];
+    sNpc.forEach(function (n) {
+      var x = Math.max(safe.x + 1, Math.min(safe.x + safe.w - 2, safe.cx + n[1])), y = Math.max(safe.y + 1, Math.min(safe.y + safe.h - 2, safe.cy + n[2]));
+      if (occupied[key(x, y)]) return;
+      occupied[key(x, y)] = 1; ents.push({ id: 's_' + n[0], k: n[0], x: x, y: y });
+    });
+    // Treppe in der Ecke des Bossraums, Boss davor
+    var stx = boss.x + boss.w - 2, sty = boss.y + 1;
+    t[sty * W + stx] = 3; occupied[key(stx, sty)] = 1;
+    var bp = { x: boss.cx, y: boss.cy }; occupied[key(bp.x, bp.y)] = 1;
+    ents.push({ id: 'boss', k: 'boss', x: bp.x, y: bp.y });
+
+    // Trainer
+    var tcount = fd.trainers;
+    for (var ti = 0; ti < tcount; ti++) {
+      var room = normal.length ? normal[ti % normal.length] : start;
+      var p = freeSpot(room, true);
+      if (!p) continue;
+      var nm = G.TRAINER_NAMES[(idx * 5 + ti) % G.TRAINER_NAMES.length];
+      var n = Math.min(4, 1 + Math.floor(r() * (1 + idx * 0.5)));
+      var team = [];
+      for (var q = 0; q < n; q++) team.push([G.weighted(r, fd.wild), G.ri(r, fd.lv[0] + 1, fd.lv[1] + 1)]);
+      ents.push({ id: 't' + ti, k: 'trainer', x: p.x, y: p.y, n: nm, line: G.pick(r, G.TRAINER_LINES), team: team, look: G.ri(r, 0, 5) });
+    }
+    // Truhen
+    var chests = Math.max(3, Math.floor(normal.length * 0.9));
+    for (var ci = 0; ci < chests; ci++) {
+      var rr = normal.length ? G.pick(r, normal) : start;
+      var cp = freeSpot(rr, true);
+      if (!cp) continue;
+      var loot = G.weighted(r, [['trank', 4], ['kapsel', 4], ['supertrank', idx >= 1 ? 3 : 0], ['superkapsel', idx >= 2 ? 3 : 0], ['beleber', idx >= 1 ? 2 : 0], ['aether', idx >= 2 ? 2 : 0], ['hypertrank', idx >= 4 ? 2 : 0], ['hyperkapsel', idx >= 5 ? 2 : 0], ['sonderbonbon', 1], ['money', 3]]);
+      ents.push({ id: 'c' + ci, k: 'chest', x: cp.x, y: cp.y, loot: loot, amt: loot === 'money' ? (200 + idx * 250) : (loot === 'sonderbonbon' ? 1 : G.ri(r, 1, 3)) });
+    }
+    // Deko-Saeulen in grossen Raeumen (blockieren nie Mittelachsen, siehe freeSpot)
+    normal.forEach(function (o) { if (o.w >= 9 && o.h >= 8 && r() < 0.6) { var dp = freeSpot(o, true); if (dp && t[dp.y * W + dp.x] !== 3) t[dp.y * W + dp.x] = 6; } });
+
+    return { idx: idx, w: W, h: H, t: t, start: sp0, stairs: { x: stx, y: sty }, safe: safe, safeSpawn: { x: safe.cx, y: safe.cy }, rooms: rooms, ents: ents, def: fd };
+  };
+
+  G.passable = function (fl, x, y) {
+    if (x < 0 || y < 0 || x >= fl.w || y >= fl.h) return false;
+    var v = fl.t[y * fl.w + x];
+    return v === 1 || v === 2 || v === 3 || v === 5;
+  };
+
+  G.reachable = function (fl, blockEnts) {
+    var seen = new Uint8Array(fl.w * fl.h), q = [fl.start.x, fl.start.y], blocked = {};
+    if (blockEnts) fl.ents.forEach(function (e) { blocked[e.x + ',' + e.y] = 1; });
+    seen[fl.start.y * fl.w + fl.start.x] = 1;
+    while (q.length) {
+      var y = q.pop(), x = q.pop();
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+        var nx = x + d[0], ny = y + d[1], i = ny * fl.w + nx;
+        if (G.passable(fl, nx, ny) && !seen[i] && !blocked[nx + ',' + ny]) { seen[i] = 1; q.push(nx, ny); }
+      });
+    }
+    return seen;
+  };
+
+  G.encounter = function (fl, r, repel, leadLv) {
+    var fd = fl.def, sid = G.weighted(r, fd.wild), lv = G.ri(r, fd.lv[0], fd.lv[1]);
+    if (repel > 0 && leadLv && lv < leadLv) return null;
+    return G.makeMon(sid, lv, r);
+  };
+
+  // ---------------- Spielstand ----------------
+  G.newState = function (seed) {
+    return {
+      v: 1, seed: seed >>> 0, money: 500, items: { trank: 3, kapsel: 5 }, team: [], box: [],
+      dex: { seen: {}, caught: {} }, floor: 0, maxFloor: 0, pos: null, dir: 2,
+      fl: {}, bosses: {}, ach: {}, boxes: { bronze: 0, silber: 0, gold: 0 },
+      steps: 0, repel: 0, flags: {}, playMs: 0, stats: { trainers: 0, chests: 0, catches: 0 }, settings: { music: 1, sfx: 1 }
+    };
+  };
+  G.serialize = function (s) {
+    return JSON.stringify(s, function (k, v) { return k.charAt(0) === '_' ? undefined : v; });
+  };
+  G.deserialize = function (str) {
+    var s = JSON.parse(str);
+    if (!s || s.v !== 1 || !Array.isArray(s.team)) throw new Error('Ungueltiger Spielstand');
+    var d = G.newState(s.seed);
+    Object.keys(d).forEach(function (k) { if (s[k] === undefined) s[k] = d[k]; });
+    return s;
+  };
+  G.floorState = function (s, idx) {
+    if (!s.fl[idx]) s.fl[idx] = { done: {}, seen: '' };
+    return s.fl[idx];
+  };
+
+  G.openLootbox = function (kind, r) {
+    var lb = G.LOOTBOX[kind], out = [];
+    var rolls = kind === 'gold' ? 3 : 2;
+    for (var i = 0; i < rolls; i++) {
+      var e = G.pick(r, lb.pool);
+      out.push(e[0] === 'money' ? { money: e[1] } : { item: e[0], n: e[1] });
+    }
+    return out;
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = G;
+})(typeof globalThis !== 'undefined' ? (globalThis.G = globalThis.G || {}) : (window.G = window.G || {}));
+</script>
+<script>// Audio komplett synthetisch ueber ZzFX: keine Audiodateien, also offline und klein.
+// iOS erlaubt einen AudioContext erst nach einer Beruehrung, daher lazy init.
+(function (G) {
+  'use strict';
+  var Z = G.ZZFX, A = G.Audio = { ctx: null, music: 1, sfxOn: 1, cur: null, curName: null, cache: {} };
+
+  A.init = function () {
+    if (A.ctx) { if (A.ctx.state === 'suspended') A.ctx.resume(); return; }
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      A.ctx = new AC();
+      Z.audioContext = A.ctx;
+      Z.volume = 0.35;
+      if (A.pendingMusic) { var p = A.pendingMusic; A.pendingMusic = null; A.play(p[0], p[1]); }
+    } catch (e) { A.ctx = null; }
+  };
+
+  var S = {
+    step: [0.15, 0, 90, 0, 0, 0.03, 4, 0],
+    select: [0.4, 0, 880, 0, 0.01, 0.05, 1],
+    back: [0.4, 0, 440, 0, 0.01, 0.06, 1, 1, -20],
+    bump: [0.3, 0, 60, 0, 0.02, 0.04, 4],
+    hit: [1, 0.1, 150, 0, 0.02, 0.15, 4, 2, -8, 0, 0, 0, 0, 0.5],
+    super: [1.2, 0.1, 300, 0, 0.04, 0.25, 3, 2, -10, 0, 0, 0, 0, 1, 0, 0.1],
+    weak: [0.7, 0.1, 120, 0, 0.02, 0.12, 0, 1, -5],
+    crit: [1.3, 0.05, 500, 0, 0.05, 0.3, 3, 1, -15, 0, 200, 0.05, 0, 1],
+    miss: [0.5, 0, 300, 0.02, 0.05, 0.1, 0, 1, -30],
+    faint: [1, 0, 400, 0, 0.2, 0.5, 2, 1, -12, 0, 0, 0, 0, 0, 0, 0, 0.1],
+    heal: [0.7, 0, 500, 0.02, 0.2, 0.3, 1, 1, 8],
+    buff: [0.6, 0, 400, 0, 0.1, 0.2, 1, 1, 10],
+    debuff: [0.6, 0, 600, 0, 0.1, 0.2, 1, 1, -10],
+    status: [0.7, 0.1, 200, 0, 0.1, 0.2, 5, 0.5, 0, 0, 0, 0, 0.05],
+    throw: [0.6, 0, 300, 0, 0.05, 0.15, 1, 1, 15],
+    shake: [0.8, 0, 120, 0, 0.03, 0.08, 4, 1],
+    run: [0.6, 0, 600, 0, 0.05, 0.2, 2, 1, -20],
+    chest: [0.8, 0, 700, 0, 0.05, 0.3, 1, 1, 0, 0, 300, 0.06],
+    encounter: [1, 0, 200, 0, 0.3, 0.3, 5, 0.5, 0, 0, 0, 0, 0.05],
+    stairs: [0.7, 0, 300, 0, 0.3, 0.4, 1, 1, -3],
+    atk: [0.5, 0.05, 250, 0, 0.03, 0.08, 2, 1, 20]
+  };
+  var JINGLES = {
+    levelup: [[0, 72], [90, 76], [180, 79], [270, 84]],
+    catch: [[0, 67], [120, 72], [240, 76], [360, 79], [520, 84]],
+    win: [[0, 72], [140, 72], [280, 72], [420, 79], [700, 76], [840, 79], [980, 84]],
+    ach: [[0, 79], [100, 84], [200, 88]],
+    evolve: [[0, 60], [150, 64], [300, 67], [450, 72], [600, 76], [750, 79], [900, 84]],
+    lose: [[0, 67], [250, 63], [500, 60], [800, 55]]
+  };
+  function freq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+  A.sfx = function (name) {
+    if (!A.ctx || !A.sfxOn) return;
+    try {
+      if (JINGLES[name]) {
+        JINGLES[name].forEach(function (n) {
+          setTimeout(function () { Z.playSamples([Z.buildSamples(0.5, 0, freq(n[1]), 0.01, 0.06, 0.18, 5, 0.5)]); }, n[0]);
+        });
+        return;
+      }
+      var p = S[name];
+      if (p) Z.playSamples([Z.buildSamples.apply(Z, p)]);
+    } catch (e) { /* Audio darf das Spiel nie stoppen */ }
+  };
+
+  // Titelweise kleine Kompositionen: Akkordfolge + seeded Melodie, einmal gerendert und geloopt.
+  var TRACKS = {
+    title: { bpm: 96, root: 57, minor: 1, prog: [0, -4, -2, -5], lead: 0.5, seed: 3, drums: 0 },
+    floor: { bpm: 112, root: 50, minor: 1, prog: [0, 0, 3, -2, 0, 5, 3, -2], lead: 0.4, seed: 11, drums: 1 },
+    safe: { bpm: 84, root: 60, minor: 0, prog: [0, 5, -3, 7], lead: 0.45, seed: 21, drums: 0 },
+    battle: { bpm: 150, root: 52, minor: 1, prog: [0, 0, -2, -2, 3, 3, 5, -1], lead: 0.6, seed: 31, drums: 2 },
+    boss: { bpm: 164, root: 50, minor: 1, prog: [0, 1, 0, -2, 0, 1, 3, -1], lead: 0.7, seed: 41, drums: 2 }
+  };
+  function render(name, variant) {
+    var tr = TRACKS[name], sr = Z.sampleRate, r = G.rng(tr.seed + variant * 17);
+    var stepLen = Math.floor(sr * 60 / tr.bpm / 2), bars = tr.prog.length, steps = 8;
+    var total = stepLen * steps * bars, buf = new Float32Array(total);
+    var scale = tr.minor ? [0, 3, 5, 7, 10, 12, 15, 17] : [0, 2, 4, 7, 9, 12, 14, 16];
+    var root = tr.root + (variant % 5) * 2 - 4;
+    function add(off, samples, vol) {
+      for (var i = 0; i < samples.length && off + i < total; i++) buf[off + i] += samples[i] * vol;
+    }
+    var noteCache = {};
+    function note(f, shape, len, curve) {
+      var k = f.toFixed(1) + shape + len;
+      if (!noteCache[k]) noteCache[k] = Z.buildSamples(1, 0, f, 0.005, len * 0.5, len * 0.5, shape, curve || 1);
+      return noteCache[k];
+    }
+    var stepS = stepLen / sr;
+    var motif = [];
+    for (var m = 0; m < steps; m++) motif.push(r() < tr.lead ? G.pick(r, scale) : null);
+    for (var b = 0; b < bars; b++) {
+      var chord = root + tr.prog[b];
+      for (var s = 0; s < steps; s++) {
+        var off = (b * steps + s) * stepLen;
+        if (s % 2 === 0) add(off, note(freq(chord - 12), 1, stepS * 1.6), 0.32);
+        var arp = [0, tr.minor ? 3 : 4, 7, 12][s % 4];
+        add(off, note(freq(chord + 12 + arp), 5, stepS * 0.6, 0.3), 0.06);
+        var mn = motif[s];
+        if (b % 4 === 3 && r() < 0.5) mn = r() < 0.5 ? null : G.pick(r, scale);
+        if (mn !== null) add(off, note(freq(chord + 12 + mn), 5, stepS * 0.9, 0.5), 0.13);
+        if (tr.drums) {
+          if (s % 4 === 0) add(off, Z.buildSamples(1, 0, 120, 0, 0.02, 0.1, 0, 1, -8), 0.35);
+          if (tr.drums > 1 && s % 4 === 2) add(off, Z.buildSamples(1, 0, 300, 0, 0.01, 0.08, 4, 1), 0.12);
+          if (s % 2 === 1) add(off, Z.buildSamples(1, 0, 4000, 0, 0, 0.03, 4, 1), 0.05);
+        }
+      }
+    }
+    return buf;
+  }
+
+  A.play = function (name, variant) {
+    variant = variant || 0;
+    var key = name + ':' + variant;
+    if (A.curName === key) return;
+    A.stop();
+    A.curName = key;
+    if (!A.music) return;
+    if (!A.ctx) { A.pendingMusic = [name, variant]; A.curName = null; return; }
+    try {
+      if (!A.cache[key]) A.cache[key] = render(name, variant);
+      A.cur = Z.playSamples([A.cache[key]], 0.55, 1, 0, true);
+    } catch (e) { A.cur = null; }
+  };
+  A.stop = function () {
+    if (A.cur) { try { A.cur.stop(); } catch (e) { } }
+    A.cur = null; A.curName = null;
+  };
+  A.setMusic = function (on, name, variant) { A.music = on; if (!on) A.stop(); else if (name) A.play(name, variant); };
+})(window.G);
+</script>
+<script>// Prozedurale Sprites: Jede Art wird aus wenigen Parametern gezeichnet, damit 50 Biester
+// ohne Bilddateien auskommen und trotzdem unterscheidbar sind.
+(function (G) {
+  'use strict';
+  var R = 48, cache = {};
+
+  function shade(hex, k) {
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    function c(v) { return Math.max(0, Math.min(255, Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k))); }
+    return 'rgb(' + c(r) + ',' + c(g) + ',' + c(b) + ')';
+  }
+  function ell(x, cx, cy, rx, ry, col) { x.fillStyle = col; x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); x.fill(); }
+  function rect(x, a, b, w, h, col) { x.fillStyle = col; x.fillRect(a, b, w, h); }
+  function tri(x, p, col) { x.fillStyle = col; x.beginPath(); x.moveTo(p[0], p[1]); x.lineTo(p[2], p[3]); x.lineTo(p[4], p[5]); x.closePath(); x.fill(); }
+
+  function drawLook(x, L) {
+    var c1 = L.c1, c2 = L.c2, dk = shade(c1, -0.35), lt = shade(c1, 0.25), ink = '#16121c';
+    var hx = 30, hy = 20, hr = 9; // Kopfposition, nach links schauend wird spaeter gespiegelt
+    // Schwanz zuerst (hinter dem Koerper)
+    if (L.tail === 'bushy') { ell(x, 8, 26, 7, 5, c1); ell(x, 5, 23, 4, 3, c2); }
+    if (L.tail === 'thin') { x.strokeStyle = dk; x.lineWidth = 2; x.beginPath(); x.moveTo(14, 32); x.quadraticCurveTo(2, 30, 5, 18); x.stroke(); }
+    if (L.tail === 'fin') tri(x, [12, 30, 2, 22, 3, 38], dk);
+    if (L.tail === 'feather') tri(x, [14, 28, 2, 24, 4, 36], dk);
+    if (L.tail === 'glow') { ell(x, 10, 32, 6, 5, c2); ell(x, 10, 32, 9, 8, 'rgba(255,255,160,0.25)'); }
+    if (L.tail === 'ring') { for (var i = 0; i < 4; i++) ell(x, 10 - i * 2, 30 - i * 3, 3, 2.5, i % 2 ? c1 : ink); }
+    if (L.tail === 'fan') { for (var j = 0; j < 7; j++) { var a = Math.PI * (0.6 + j * 0.13); ell(x, 14 + Math.cos(a) * 12, 26 - Math.sin(a) * 12, 3.5, 3.5, j % 2 ? c2 : c1); } }
+
+    switch (L.b) {
+      case 'quad':
+        rect(x, 14, 34, 3, 8, dk); rect(x, 26, 34, 3, 8, dk); rect(x, 18, 35, 3, 7, c1); rect(x, 30, 35, 3, 7, c1);
+        ell(x, 22, 30, 12, 8, c1); ell(x, 22, 33, 8, 4, c2); hx = 33; hy = 20; hr = 8; break;
+      case 'long':
+        rect(x, 12, 34, 3, 5, dk); rect(x, 30, 34, 3, 5, dk);
+        ell(x, 22, 32, 15, 6, c1); ell(x, 22, 35, 11, 3, c2); hx = 36; hy = 26; hr = 7; break;
+      case 'round':
+        rect(x, 15, 38, 5, 4, dk); rect(x, 27, 38, 5, 4, dk);
+        ell(x, 24, 28, 14, 13, c1); ell(x, 24, 32, 9, 8, c2); hx = 24; hy = 22; hr = 0; break;
+      case 'blob':
+        ell(x, 24, 37, 18, 5, c1); ell(x, 18, 26, 11, 11, c2); ell(x, 18, 26, 6, 6, shade(c2, -0.25)); ell(x, 18, 26, 2.5, 2.5, c2);
+        ell(x, 36, 28, 6, 9, c1); hx = 36; hy = 24; hr = 6; break;
+      case 'bird':
+        rect(x, 20, 38, 2, 6, '#e0a030'); rect(x, 27, 38, 2, 6, '#e0a030');
+        ell(x, 24, 30, 12, 10, c1); ell(x, 26, 33, 7, 6, c2); ell(x, 18, 28, 8, 6, dk);
+        tri(x, [38, 20, 46, 22, 38, 24], '#f2b33a'); hx = 32; hy = 19; hr = 8; break;
+      case 'bug':
+        for (var k = 0; k < 3; k++) { x.strokeStyle = ink; x.lineWidth = 1.5; x.beginPath(); x.moveTo(16 + k * 7, 34); x.lineTo(13 + k * 7, 42); x.stroke(); }
+        ell(x, 18, 30, 11, 8, c1); x.strokeStyle = dk; x.lineWidth = 1; x.beginPath(); x.moveTo(18, 22); x.lineTo(18, 38); x.stroke();
+        ell(x, 32, 27, 7, 7, dk); hx = 34; hy = 24; hr = 6; break;
+      case 'bat':
+        tri(x, [22, 26, 2, 12, 8, 36], dk); tri(x, [26, 26, 46, 12, 40, 36], dk);
+        ell(x, 24, 28, 9, 10, c1); ell(x, 24, 31, 5, 5, c2); hx = 24; hy = 20; hr = 8; break;
+      case 'fish':
+        ell(x, 22, 28, 16, 10, c1); ell(x, 24, 32, 12, 5, c2); tri(x, [20, 18, 28, 8, 30, 20], dk); tri(x, [22, 36, 28, 44, 30, 34], dk);
+        hx = 34; hy = 26; hr = 0; break;
+      case 'tall':
+        rect(x, 15, 38, 6, 6, dk); rect(x, 27, 38, 6, 6, dk);
+        ell(x, 24, 29, 13, 12, c1); ell(x, 24, 31, 8, 8, c2);
+        ell(x, 9, 31, 4, 9, dk); ell(x, 39, 31, 4, 9, dk); hx = 24; hy = 14; hr = 8; break;
+    }
+    if (hr) ell(x, hx, hy, hr, hr * 0.9, c1);
+    // Ohren / Kopfschmuck
+    var ex = hx, ey = hy - (hr || 8);
+    switch (L.ear) {
+      case 'pointy': tri(x, [ex - 6, ey + 3, ex - 3, ey - 6, ex, ey + 2], c1); tri(x, [ex + 1, ey + 2, ex + 4, ey - 6, ex + 7, ey + 3], c1); tri(x, [ex - 5, ey + 2, ex - 3, ey - 3, ex - 1, ey + 2], c2); break;
+      case 'round': ell(x, ex - 5, ey + 1, 3.5, 3.5, c1); ell(x, ex + 5, ey + 1, 3.5, 3.5, c1); ell(x, ex - 5, ey + 1, 1.8, 1.8, c2); break;
+      case 'antenna': x.strokeStyle = ink; x.lineWidth = 1.2; x.beginPath(); x.moveTo(ex - 2, ey + 2); x.lineTo(ex - 5, ey - 6); x.moveTo(ex + 2, ey + 2); x.lineTo(ex + 5, ey - 6); x.stroke(); ell(x, ex - 5, ey - 6, 1.6, 1.6, c2); ell(x, ex + 5, ey - 6, 1.6, 1.6, c2); break;
+      case 'horn': tri(x, [ex - 2, ey + 2, ex, ey - 7, ex + 2, ey + 2], '#f2e6c8'); break;
+      case 'sprout': rect(x, ex - 1, ey - 4, 2, 6, '#2e7031'); ell(x, ex - 4, ey - 4, 4, 2, '#7ed957'); ell(x, ex + 4, ey - 5, 4, 2, '#7ed957'); break;
+      case 'shroom': ell(x, ex, ey, 10, 5, '#d23c3c'); ell(x, ex - 4, ey - 1, 1.6, 1.4, '#fff'); ell(x, ex + 3, ey - 2, 1.6, 1.4, '#fff'); break;
+      case 'gills': for (var g = 0; g < 3; g++) { ell(x, ex - 8, ey + 3 + g * 3, 3, 1.3, c2); ell(x, ex + 8, ey + 3 + g * 3, 3, 1.3, c2); } break;
+      case 'spikes': for (var q = 0; q < 6; q++) tri(x, [ex - 14 + q * 5, ey + 8, ex - 12 + q * 5, ey - 2, ex - 10 + q * 5, ey + 8], c2); break;
+      case 'tuft': tri(x, [ex - 7, ey + 3, ex - 6, ey - 4, ex - 3, ey + 2], dk); tri(x, [ex + 3, ey + 2, ex + 6, ey - 4, ex + 7, ey + 3], dk); break;
+      case 'crest': for (var w = 0; w < 3; w++) { x.strokeStyle = c2; x.lineWidth = 1; x.beginPath(); x.moveTo(ex, ey + 1); x.lineTo(ex - 3 + w * 3, ey - 7); x.stroke(); ell(x, ex - 3 + w * 3, ey - 7, 1.5, 1.5, c2); } break;
+    }
+    // Gesicht nach rechts (Spiegelung fuer Gegner)
+    var fx = hx + (hr ? hr * 0.35 : 4), fy = hy - 1;
+    switch (L.eye) {
+      case 'big': ell(x, fx, fy, 2.8, 3, '#fff'); ell(x, fx + 0.8, fy, 1.6, 2, ink); ell(x, fx + 1.4, fy - 1, 0.6, 0.6, '#fff'); ell(x, fx - 6, fy, 2.4, 2.8, '#fff'); ell(x, fx - 5.3, fy, 1.4, 1.8, ink); break;
+      case 'angry': ell(x, fx, fy, 2.2, 2, '#fff'); ell(x, fx + 0.6, fy + 0.3, 1.2, 1.2, ink); ell(x, fx - 6, fy, 2, 1.8, '#fff'); ell(x, fx - 5.4, fy + 0.3, 1.1, 1.1, ink); x.strokeStyle = ink; x.lineWidth = 1.2; x.beginPath(); x.moveTo(fx - 8, fy - 4); x.lineTo(fx - 4, fy - 2.5); x.moveTo(fx - 2, fy - 2.5); x.lineTo(fx + 2.5, fy - 4); x.stroke(); break;
+      case 'sleepy': x.strokeStyle = ink; x.lineWidth = 1.2; x.beginPath(); x.moveTo(fx - 2, fy); x.lineTo(fx + 2, fy); x.moveTo(fx - 8, fy); x.lineTo(fx - 4, fy); x.stroke(); break;
+      case 'visor': rect(x, fx - 9, fy - 2, 13, 4, '#1b2a3a'); rect(x, fx - 8, fy - 1, 11, 1.5, c2); break;
+      case 'many': for (var e = 0; e < 4; e++) ell(x, fx - 6 + (e % 2) * 5, fy - 1 + Math.floor(e / 2) * 3, 1.3, 1.3, c2); break;
+      default: ell(x, fx, fy, 1.4, 1.4, ink); ell(x, fx - 5, fy, 1.3, 1.3, ink);
+    }
+    // Accessoires: der Gadget- und Gentleman-Dieb-Charakter der Welt
+    var top = hy - (hr || 8);
+    switch (L.acc) {
+      case 'tophat': rect(x, hx - 7, top - 1, 14, 2, ink); rect(x, hx - 4, top - 10, 8, 9, ink); rect(x, hx - 4, top - 4, 8, 1.5, '#b8202a'); break;
+      case 'crown': x.fillStyle = '#f2c230'; x.beginPath(); x.moveTo(hx - 6, top + 1); x.lineTo(hx - 6, top - 5); x.lineTo(hx - 3, top - 2); x.lineTo(hx, top - 7); x.lineTo(hx + 3, top - 2); x.lineTo(hx + 6, top - 5); x.lineTo(hx + 6, top + 1); x.fill(); break;
+      case 'monocle': x.strokeStyle = '#f2c230'; x.lineWidth = 1.2; x.beginPath(); x.arc(fx, fy, 3.5, 0, 7); x.stroke(); x.beginPath(); x.moveTo(fx + 1, fy + 3.5); x.lineTo(fx + 2, fy + 10); x.stroke(); break;
+      case 'goggles': rect(x, hx - 9, top + 2, 18, 2, '#3a2a1a'); ell(x, hx - 3, top + 3, 3, 3, '#7ad3ff'); ell(x, hx + 4, top + 3, 3, 3, '#7ad3ff'); break;
+      case 'visor': if (L.eye !== 'visor') { rect(x, fx - 9, fy - 2, 13, 4, '#1b2a3a'); rect(x, fx - 8, fy - 1, 11, 1.5, c2); } break;
+      case 'antenna': x.strokeStyle = '#999'; x.lineWidth = 1; x.beginPath(); x.moveTo(hx + 2, top + 1); x.lineTo(hx + 4, top - 9); x.stroke(); ell(x, hx + 4, top - 9, 1.8, 1.8, '#ff3a3a'); break;
+      case 'cape': tri(x, [hx - 4, hy + 6, 4, 40, 22, 42], '#b8202a'); break;
+      case 'bowtie': tri(x, [hx, hy + 8, hx - 5, hy + 5, hx - 5, hy + 11], '#d42f6a'); tri(x, [hx, hy + 8, hx + 5, hy + 5, hx + 5, hy + 11], '#d42f6a'); break;
+      case 'mask': rect(x, fx - 9, fy - 2.5, 13, 4, 'rgba(10,10,10,0.85)'); ell(x, fx, fy, 1.2, 1.2, '#fff'); ell(x, fx - 5, fy, 1.2, 1.2, '#fff'); break;
+      case 'shades': rect(x, fx - 9, fy - 2, 13, 3.5, '#0a0a0a'); rect(x, fx - 8, fy - 1.5, 3, 1, '#666'); break;
+      case 'drill': tri(x, [hx + 6, hy - 3, hx + 16, hy, hx + 6, hy + 3], '#c0c6cf'); break;
+      case 'wheel': x.strokeStyle = '#5fc6c9'; x.lineWidth = 1.5; x.beginPath(); x.arc(24, 28, 19, 0, 7); x.stroke(); break;
+      case 'coil': for (var cc = 0; cc < 3; cc++) ell(x, hx - 6 + cc * 6, top - 3, 2, 2, '#9fe8ff'); break;
+      case 'gear': x.strokeStyle = '#d4af37'; x.lineWidth = 2; x.beginPath(); x.arc(20, 30, 5, 0, 7); x.stroke(); break;
+    }
+    // Lichtkante fuer etwas Volumen
+    ell(x, hx - 2, hy - (hr ? hr * 0.45 : 6), 2.5, 1.4, 'rgba(255,255,255,0.35)');
+  }
+
+  G.monCanvas = function (sid) {
+    if (cache[sid]) return cache[sid];
+    var c = document.createElement('canvas'); c.width = R; c.height = R;
+    drawLook(c.getContext('2d'), G.SPECIES_BY_ID[sid].look);
+    cache[sid] = c;
+    return c;
+  };
+  // facingLeft: Gegner schauen nach links zum Spieler
+  G.drawMon = function (ctx, sid, x, y, size, facingLeft, alpha) {
+    var c = G.monCanvas(sid);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    if (alpha !== undefined) ctx.globalAlpha = alpha;
+    if (facingLeft) { ctx.translate(x + size, y); ctx.scale(-1, 1); ctx.drawImage(c, 0, 0, size, size); }
+    else ctx.drawImage(c, x, y, size, size);
+    ctx.restore();
+  };
+  G.monImg = function (sid, size, facingLeft) {
+    var c = document.createElement('canvas'); c.width = size; c.height = size;
+    G.drawMon(c.getContext('2d'), sid, 0, 0, size, facingLeft);
+    return c;
+  };
+
+  // Menschen auf der Karte, 16x16 Raster
+  var PEOPLE = [['#3a6ea5', '#f1c27d', '#2b1d14'], ['#a53a3a', '#e0ac69', '#111'], ['#5a3aa5', '#f1c27d', '#c9a227'], ['#3aa55a', '#8d5524', '#111'], ['#a5833a', '#ffdbac', '#7a3a1a'], ['#444', '#c68642', '#ddd']];
+  G.drawPerson = function (x, px, py, s, dir, kind, look, frame) {
+    var col = kind === 'player' ? ['#1f2a44', '#ffdbac', '#e8e8e8'] : kind === 'boss' ? ['#7a0f2a', '#e0ac69', '#f2c230'] : kind === 'heal' ? ['#f2f2f2', '#ffdbac', '#d23c3c'] : kind === 'shop' ? ['#2e7031', '#e0ac69', '#3a2a1a'] : PEOPLE[(look || 0) % PEOPLE.length];
+    var u = s / 16, bob = frame ? u : 0;
+    function r(a, b, w, h, c) { x.fillStyle = c; x.fillRect(px + a * u, py + b * u - bob, w * u, h * u); }
+    r(4, 14, 8, 2, 'rgba(0,0,0,0.25)');
+    r(5, 9, 6, 5, col[0]); r(5, 13, 2, 2, '#222'); r(9, 13, 2, 2, '#222');
+    if (frame) { r(5, 13, 2, 1, col[0]); }
+    r(5, 3, 6, 6, col[1]); r(5, 2, 6, 2, col[2]);
+    if (kind === 'player') { r(4, 9, 8, 1, '#c9a227'); r(10, 4, 2, 1, '#c9a227'); }
+    if (kind === 'boss') { r(4, 1, 8, 1, '#f2c230'); r(5, 0, 1, 1, '#f2c230'); r(8, 0, 1, 1, '#f2c230'); r(10, 0, 1, 1, '#f2c230'); }
+    var ink = '#16121c';
+    if (dir === 0) { /* hoch: Hinterkopf */ r(5, 3, 6, 3, col[2]); }
+    else if (dir === 2) { r(6, 5, 1, 1, ink); r(9, 5, 1, 1, ink); }
+    else if (dir === 1) { r(9, 5, 1, 1, ink); }
+    else { r(6, 5, 1, 1, ink); }
+  };
+})(window.G);
+</script>
+<script>// UI-Schicht: verbindet Engine, Sprites und Audio. Alles laeuft in einer Datei ohne Netzwerk,
+// damit das Spiel im Flugmodus funktioniert, solange der Tab geoeffnet bleibt.
+(function (G) {
+  'use strict';
+  var A = G.Audio, S = null, FL = null, SEEN = null;
+  var SAVE_KEY = 'tiefenkriecher_save_v1';
+  var $ = function (id) { return document.getElementById(id); };
+  var rnd = Math.random;
+  var mode = 'title', busy = false;
+  var held = null, lastStep = 0, STEP_MS = 150;
+  var anim = null; // Bewegungs-Tween
+  var DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+  function h(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'on') Object.keys(attrs.on).forEach(function (ev) { e.addEventListener(ev, attrs.on[ev]); });
+      else if (k === 'style') e.style.cssText = attrs.style;
+      else if (k === 'html') e.innerHTML = attrs.html;
+      else e.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c == null) return; e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function btn(label, fn, cls) {
+    return h('button', { 'class': 'btn ' + (cls || ''), on: { click: function (ev) { ev.stopPropagation(); A.sfx('select'); fn(ev); } } }, [label]);
+  }
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // ---------------- Speichern ----------------
+  function save() {
+    if (!S) return;
+    try {
+      var fs = G.floorState(S, S.floor);
+      fs.seen = packSeen();
+      localStorage.setItem(SAVE_KEY, G.serialize(S));
+    } catch (e) { /* privater Modus: Spiel laeuft weiter, nur ohne Speichern */ }
+  }
+  function loadSave() {
+    try { var s = localStorage.getItem(SAVE_KEY); return s ? G.deserialize(s) : null; } catch (e) { return null; }
+  }
+  function packSeen() {
+    if (!SEEN) return '';
+    var out = '', b = 0, n = 0;
+    for (var i = 0; i < SEEN.length; i++) { b = (b << 1) | (SEEN[i] ? 1 : 0); n++; if (n === 6) { out += String.fromCharCode(48 + b); b = 0; n = 0; } }
+    if (n) out += String.fromCharCode(48 + (b << (6 - n)));
+    return out;
+  }
+  function unpackSeen(str, len) {
+    var a = new Uint8Array(len);
+    for (var i = 0; i < str.length; i++) { var v = str.charCodeAt(i) - 48; for (var k = 0; k < 6; k++) { var idx = i * 6 + k; if (idx < len) a[idx] = (v >> (5 - k)) & 1; } }
+    return a;
+  }
+
+  // ---------------- Toasts / Erfolge ----------------
+  function toast(title, text) {
+    var t = h('div', { 'class': 'toast' }, [h('b', null, [title]), h('div', null, [text])]);
+    $('toasts').appendChild(t);
+    setTimeout(function () { t.classList.add('out'); }, 3200);
+    setTimeout(function () { t.remove(); }, 3800);
+  }
+  function ach(id) {
+    if (!S || S.ach[id]) return;
+    var a = G.ACHIEVEMENTS[id];
+    S.ach[id] = Date.now();
+    S.boxes[a.box]++;
+    A.sfx('ach');
+    toast('ERFOLG: ' + a.n, a.d + ' Belohnung: ' + G.LOOTBOX[a.box].n + '.');
+  }
+  function checkAch() {
+    var caught = Object.keys(S.dex.caught).length;
+    if (S.team.length >= 4) ach('team4');
+    if (S.team.length >= 6) ach('team6');
+    if (caught >= 10) ach('dex10');
+    if (caught >= 25) ach('dex25');
+    if (caught >= 40) ach('dex40');
+    if (S.money >= 10000) ach('rich');
+    if (S.stats.chests >= 10) ach('chest10');
+    if (S.stats.trainers >= 10) ach('trainer10');
+    if (S.team.concat(S.box).some(function (m) { return m.lv >= 50; })) ach('lvl50');
+    if (S.floor >= 2) ach('floor3');
+    if (S.floor >= 4) ach('floor5');
+    if (S.floor >= 7) ach('floor8');
+    if (S.floor >= G.FLOORS.length + 4) ach('bonus5');
+  }
+
+  // ---------------- Dialoge ----------------
+  var dlgQ = null;
+  function say(lines, cb, speaker) {
+    if (typeof lines === 'string') lines = [lines];
+    lines = lines.slice();
+    var box = $('dlg'), txt = $('dlgtxt'), who = $('dlgwho');
+    box.classList.add('on'); mode = mode === 'battle' ? 'battle' : 'dialog';
+    who.textContent = speaker || '';
+    who.style.display = speaker ? 'block' : 'none';
+    var typing = null, full = '';
+    function next() {
+      if (!lines.length) { box.classList.remove('on'); dlgQ = null; if (mode === 'dialog') mode = 'world'; if (cb) cb(); return; }
+      full = lines.shift(); var i = 0; txt.textContent = '';
+      clearInterval(typing);
+      typing = setInterval(function () { i += 2; txt.textContent = full.slice(0, i); if (i >= full.length) { clearInterval(typing); typing = null; } }, 18);
+    }
+    dlgQ = function () { if (typing) { clearInterval(typing); typing = null; txt.textContent = full; } else { A.sfx('select'); next(); } };
+    next();
+  }
+  function announcer(key) { var l = G.ANNOUNCER[key]; return l ? l[Math.floor(rnd() * l.length)] : ''; }
+  function choice(text, opts, cb, speaker) {
+    if (mode === 'world' || mode === 'dialog') mode = 'menu';
+    var p = panel(speaker || 'Entscheidung', function (body) {
+      body.appendChild(h('p', { 'class': 'lead' }, [text]));
+      opts.forEach(function (o, i) { body.appendChild(btn(o, function () { closePanel(); cb(i); }, 'wide')); });
+    }, true);
+    return p;
+  }
+
+  // ---------------- Panels ----------------
+  var panelStack = [];
+  function panel(title, build, noClose) {
+    var root = $('panel');
+    var body = h('div', { 'class': 'pbody' });
+    var head = h('div', { 'class': 'phead' }, [h('span', null, [title]), noClose ? null : btn('Schliessen', closePanel, 'small')]);
+    root.innerHTML = ''; root.appendChild(head); root.appendChild(body);
+    root.classList.add('on');
+    panelStack.push({ title: title, build: build, noClose: noClose });
+    build(body);
+    return body;
+  }
+  function refreshPanel() {
+    var top = panelStack.pop(); if (top) panel(top.title, top.build, top.noClose);
+  }
+  function closePanel() {
+    panelStack.pop();
+    if (panelStack.length) { var top = panelStack.pop(); panel(top.title, top.build, top.noClose); return; }
+    $('panel').classList.remove('on');
+    if (mode === 'menu') mode = 'world';
+    updateHud();
+  }
+  function closeAllPanels() { panelStack = []; $('panel').classList.remove('on'); }
+
+  function hpBar(m) {
+    var max = G.stats(m).hp, p = Math.max(0, m.hp / max);
+    return h('div', { 'class': 'hpbar' }, [h('div', { 'class': 'hpfill', style: 'width:' + (p * 100) + '%;background:' + (p > 0.5 ? '#4cd964' : p > 0.2 ? '#f2c230' : '#ff3b30') })]);
+  }
+  function typeTag(t) { return h('span', { 'class': 'tt', style: 'background:' + G.TYPE_COLOR[t] }, [t]); }
+  var ST_SHORT = { brn: 'BRN', psn: 'GFT', par: 'PAR', slp: 'SLF' };
+  function monRow(m, onClick, extra) {
+    var sp = G.SPECIES_BY_ID[m.sid];
+    var row = h('div', { 'class': 'mrow' + (m.hp <= 0 ? ' ko' : ''), on: onClick ? { click: function () { A.sfx('select'); onClick(); } } : {} }, [
+      G.monImg(m.sid, 44),
+      h('div', { 'class': 'mcol' }, [
+        h('div', null, [h('b', null, [G.monName(m)]), ' Lv ' + m.lv + ' ', m.st ? h('span', { 'class': 'st' }, [ST_SHORT[m.st]]) : null]),
+        h('div', null, sp.types.map(typeTag)),
+        hpBar(m),
+        h('div', { 'class': 'small' }, [m.hp + ' / ' + G.stats(m).hp + ' KP'])
+      ]),
+      extra || null
+    ]);
+    return row;
+  }
+
+  // ---------------- Welt ----------------
+  var cv, cx, TILE = 32, VW = 11, VH = 13;
+  function resize() {
+    cv = $('view'); cx = cv.getContext('2d');
+    var wrap = $('stage'), w = wrap.clientWidth, hh = wrap.clientHeight;
+    var dpr = Math.min(3, window.devicePixelRatio || 1);
+    cv.width = Math.floor(w * dpr); cv.height = Math.floor(hh * dpr);
+    cv.style.width = w + 'px'; cv.style.height = hh + 'px';
+    TILE = Math.floor(cv.width / VW);
+    VH = Math.ceil(cv.height / TILE) + 1;
+    var bc = $('bcv');
+    if (bc) { bc.width = Math.floor(bc.clientWidth * dpr); bc.height = Math.floor(bc.clientHeight * dpr); }
+  }
+
+  function enterFloor(idx, toSafe) {
+    S.floor = idx; S.maxFloor = Math.max(S.maxFloor, idx);
+    FL = G.genFloor(idx, S.seed);
+    var fs = G.floorState(S, idx);
+    SEEN = fs.seen ? unpackSeen(fs.seen, FL.w * FL.h) : new Uint8Array(FL.w * FL.h);
+    if (!S.pos || S.pos.f !== idx) S.pos = { f: idx, x: FL.start.x, y: FL.start.y };
+    if (toSafe) { S.pos = { f: idx, x: FL.safeSpawn.x, y: FL.safeSpawn.y }; }
+    reveal();
+    playAreaMusic();
+    updateHud();
+    checkAch();
+  }
+  function inSafe(x, y) { var s = FL.safe; return x >= s.x && x < s.x + s.w && y >= s.y && y < s.y + s.h; }
+  function playAreaMusic() {
+    if (!FL) return;
+    if (inSafe(S.pos.x, S.pos.y)) A.play('safe'); else A.play('floor', S.floor);
+  }
+  function reveal() {
+    var R = 4;
+    for (var dy = -R; dy <= R; dy++) for (var dx = -R; dx <= R; dx++) {
+      var x = S.pos.x + dx, y = S.pos.y + dy;
+      if (x >= 0 && y >= 0 && x < FL.w && y < FL.h && dx * dx + dy * dy <= R * R + 2) SEEN[y * FL.w + x] = 1;
+    }
+  }
+  function entAt(x, y) {
+    var done = G.floorState(S, S.floor).done;
+    for (var i = 0; i < FL.ents.length; i++) {
+      var e = FL.ents[i];
+      if (e.x === x && e.y === y) { if (e.k === 'chest' && done[e.id]) return null; return e; }
+    }
+    return null;
+  }
+  function updateHud() {
+    if (!S || !FL) return;
+    $('hudfloor').textContent = (S.floor < G.FLOORS.length ? 'Etage ' + (S.floor + 1) + ': ' : '') + FL.def.n;
+    $('hudmoney').textContent = fmt(S.money) + ' M';
+  }
+
+  function tryMove(d) {
+    S.dir = d;
+    var nx = S.pos.x + DIRS[d][0], ny = S.pos.y + DIRS[d][1];
+    if (!G.passable(FL, nx, ny) || entAt(nx, ny)) { A.sfx('bump'); return false; }
+    var wasSafe = inSafe(S.pos.x, S.pos.y);
+    anim = { fx: S.pos.x, fy: S.pos.y, t0: performance.now() };
+    S.pos.x = nx; S.pos.y = ny;
+    S.steps++;
+    if (S.steps === 1) ach('firstStep');
+    if (S.repel > 0) { S.repel--; if (S.repel === 0) toast('Abwehrspray', 'Die Wirkung ist verflogen.'); }
+    reveal();
+    A.sfx('step');
+    if (wasSafe !== inSafe(nx, ny)) { playAreaMusic(); if (!wasSafe && !S.flags['safe' + S.floor]) { S.flags['safe' + S.floor] = 1; setTimeout(function () { say(announcer('safe'), null, 'MODERATOR'); }, 160); return true; } }
+    if (S.steps % 20 === 0) save();
+    setTimeout(function () { afterStep(nx, ny); }, STEP_MS - 10);
+    return true;
+  }
+  function afterStep(x, y) {
+    if (mode !== 'world') return;
+    var tile = FL.t[y * FL.w + x];
+    // Trainer und Boss fordern automatisch heraus, wenn man direkt daneben steht
+    var done = G.floorState(S, S.floor).done;
+    for (var i = 0; i < FL.ents.length; i++) {
+      var e = FL.ents[i];
+      if ((e.k === 'trainer' && !done[e.id]) && Math.abs(e.x - x) + Math.abs(e.y - y) === 1) { held = null; trainerTalk(e); return; }
+    }
+    if (tile === 3) { held = null; stairs(); return; }
+    if (tile === 2) {
+      ach('firstGrass');
+      if (rnd() < 0.11) {
+        var lead = S.team.filter(G.isAlive)[0];
+        var w = G.encounter(FL, rnd, S.repel, lead ? lead.lv : 0);
+        if (w) { held = null; startWild(w); }
+      }
+    }
+  }
+  function onA() {
+    if (dlgQ) { dlgQ(); return; }
+    if (mode !== 'world' || anim) return;
+    var nx = S.pos.x + DIRS[S.dir][0], ny = S.pos.y + DIRS[S.dir][1];
+    var e = entAt(nx, ny);
+    if (e) interact(e);
+  }
+  function onB() {
+    if (dlgQ) { dlgQ(); return; }
+    if (mode === 'menu') { closePanel(); return; }
+    if (mode === 'world') openMenu();
+  }
+
+  function interact(e) {
+    var done = G.floorState(S, S.floor).done;
+    if (e.k === 'heal') {
+      say(['Schwester Volta: Leg sie hier ab, Kleines. Ich flicke sie zusammen.'], function () {
+        S.team.forEach(G.healFull); A.sfx('heal'); save();
+        say('Dein Team ist vollstaendig geheilt. Der Sponsor uebernimmt die Kosten. Diesmal.', null, 'SCHWESTER VOLTA');
+      }, 'SCHWESTER VOLTA');
+    } else if (e.k === 'shop') openShop();
+    else if (e.k === 'pc') openPC();
+    else if (e.k === 'host') hostTalk();
+    else if (e.k === 'chest') {
+      if (done[e.id]) return;
+      done[e.id] = 1; S.stats.chests++;
+      A.sfx('chest');
+      if (e.loot === 'money') { S.money += e.amt; say('Truhe geoeffnet: ' + fmt(e.amt) + ' Muenzen!'); }
+      else { S.items[e.loot] = (S.items[e.loot] || 0) + e.amt; say('Truhe geoeffnet: ' + e.amt + 'x ' + G.ITEMS[e.loot].n + '!'); }
+      checkAch(); updateHud(); save();
+    } else if (e.k === 'trainer') {
+      if (done[e.id]) say(e.n + ': Du hast gewonnen. Ich muss jetzt meine Lebensentscheidungen ueberdenken.');
+      else trainerTalk(e);
+    } else if (e.k === 'boss') bossTalk(e);
+  }
+  function trainerTalk(e) {
+    mode = 'dialog';
+    say([e.line], function () {
+      var team = e.team.map(function (t) { return G.makeMon(t[0], t[1], rnd); });
+      startBattle('trainer', team, { name: e.n, ent: e });
+    }, e.n.toUpperCase());
+  }
+  function bossTalk(e) {
+    if (S.bosses[S.floor]) {
+      say('Der Boss dieser Etage ist besiegt und schmollt in einer Ecke.');
+      return;
+    }
+    var bd = FL.def.boss;
+    say(['ETAGENBOSS: ' + bd.n + ' -- ' + bd.t + '.', 'MODERATOR: Meine Damen und Herren, der Bosskampf beginnt! Wetten werden noch angenommen!'], function () {
+      var team = bd.team.map(function (t) { return G.makeMon(t[0], t[1], rnd); });
+      startBattle('trainer', team, { name: bd.n, boss: true, reward: bd.reward });
+    }, 'MODERATOR');
+  }
+  function hostTalk() {
+    var tips = [
+      'Tipp vom Moderator: Hohes Gras ist gefaehrlich. Darum lieben es die Zuschauer.',
+      'Tipp: Biester mit wenig KP oder einem Zustand lassen sich viel leichter fangen.',
+      'Tipp: Feuer schlaegt Pflanze und Tech. Wasser schlaegt Feuer und Tech. Blitz schlaegt Wasser und Tech. Tech hat es nicht leicht.',
+      'Tipp: Schatten schlaegt Wild und Blitz, Tech durchleuchtet Schatten.',
+      'Tipp: Erfolge geben Lootboxen. Oeffnen kannst du sie im Menue.',
+      'Tipp: Der EP-Teiler verteilt Erfahrung auf das ganze Team. Bosse vergeben gerne Geschenke.',
+      'Tipp: Speichern passiert automatisch. Im Menue kannst du deinen Spielstand zusaetzlich als Code sichern.'
+    ];
+    var lines = [tips[Math.floor(rnd() * tips.length)]];
+    var fd = FL.def;
+    if (fd.final && S.bosses[S.floor] && !S.dex.caught.abgrundwal) {
+      say(lines.concat(['Und noch etwas: Unter dem Studio rumort es. Der Abgrundwal wartet. Willst du es mit ihm aufnehmen?']), function () {
+        choice('Den Abgrundwal herausfordern?', ['Ja, los!', 'Spaeter'], function (i) { if (i === 0) startWild(G.makeMon('abgrundwal', 60, rnd)); });
+      }, 'MODERATOR');
+      return;
+    }
+    say(lines, null, 'MODERATOR');
+  }
+  function stairs() {
+    if (!S.bosses[S.floor]) { say(announcer('stairsLocked'), null, 'MODERATOR'); return; }
+    var next = S.floor + 1;
+    var nd = G.floorDef(next);
+    choice('Treppe nach unten: ' + nd.n + ' (Level ' + nd.lv[0] + '-' + nd.lv[1] + '). Hinabsteigen?', ['Hinab', 'Noch nicht'], function (i) {
+      if (i !== 0) return;
+      A.sfx('stairs');
+      save();
+      fade(function () {
+        S.pos = null;
+        enterFloor(next);
+        save();
+        say([announcer('floor'), 'Etage: ' + nd.n + '.'], null, 'MODERATOR');
+      });
+    });
+  }
+  function fade(fn) {
+    var f = $('fade'); f.classList.add('on');
+    setTimeout(function () { fn(); f.classList.remove('on'); }, 350);
+  }
+
+  // Rendering der Oberwelt
+  var lastFrame = 0, walkFrame = 0;
+  function drawWorld(now) {
+    if (!FL || !cx) return;
+    var px = S.pos.x, py = S.pos.y;
+    if (anim) {
+      var k = Math.min(1, (now - anim.t0) / STEP_MS);
+      px = anim.fx + (S.pos.x - anim.fx) * k; py = anim.fy + (S.pos.y - anim.fy) * k;
+      walkFrame = k < 0.5 ? 1 : 0;
+      if (k >= 1) { anim = null; walkFrame = 0; }
+    }
+    var T = TILE, W = cv.width, H = cv.height;
+    var camX = px * T - W / 2 + T / 2, camY = py * T - H / 2 + T / 2;
+    cx.fillStyle = '#05050a'; cx.fillRect(0, 0, W, H);
+    var pal = FL.def.pal;
+    var x0 = Math.floor(camX / T) - 1, y0 = Math.floor(camY / T) - 1, x1 = x0 + VW + 3, y1 = y0 + VH + 3;
+    var t = now / 1000;
+    for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+      if (x < 0 || y < 0 || x >= FL.w || y >= FL.h) continue;
+      var i = y * FL.w + x;
+      if (!SEEN[i]) continue;
+      var v = FL.t[i], sx = Math.round(x * T - camX), sy = Math.round(y * T - camY);
+      if (v === 0 || v === 6) {
+        var below = y + 1 < FL.h && FL.t[i + FL.w] !== 0 && FL.t[i + FL.w] !== 6;
+        cx.fillStyle = below ? shadeFloor(pal[3], 2) : pal[0]; cx.fillRect(sx, sy, T, T);
+        if (below) { cx.fillStyle = 'rgba(0,0,0,0.3)'; cx.fillRect(sx, sy + T * 0.7, T, T * 0.3); cx.fillStyle = 'rgba(255,255,255,0.06)'; cx.fillRect(sx, sy, T, T * 0.12); }
+        if (v === 6) {
+          cx.fillStyle = pal[2]; cx.fillRect(sx, sy, T, T);
+          cx.fillStyle = pal[1]; cx.fillRect(sx + T * 0.2, sy + T * 0.1, T * 0.6, T * 0.8);
+          cx.fillStyle = pal[3]; cx.fillRect(sx + T * 0.2, sy + T * 0.1, T * 0.6, T * 0.12);
+        }
+        continue;
+      }
+      var base = v === 5 ? '#3a3550' : v === 2 ? shadeFloor(pal[2], (x + y) % 2) : shadeFloor(pal[1], (x + y) % 2);
+      cx.fillStyle = base; cx.fillRect(sx, sy, T, T);
+      if (v === 5) { cx.fillStyle = 'rgba(255,226,58,0.10)'; cx.fillRect(sx + 2, sy + 2, T - 4, T - 4); }
+      if (v === 2) {
+        cx.fillStyle = pal[3];
+        var sway = Math.sin(t * 2 + x * 0.7 + y) * T * 0.04;
+        for (var g = 0; g < 3; g++) {
+          var gx = sx + T * (0.18 + g * 0.3), gy = sy + T * 0.85;
+          cx.beginPath(); cx.moveTo(gx - T * 0.1, gy); cx.lineTo(gx + sway, gy - T * 0.55); cx.lineTo(gx + T * 0.1, gy); cx.fill();
+        }
+        cx.fillStyle = 'rgba(0,0,0,0.15)'; cx.fillRect(sx, sy + T * 0.85, T, T * 0.15);
+      }
+      if (v === 3) {
+        var open = S.bosses[S.floor];
+        for (var st = 0; st < 4; st++) { cx.fillStyle = st % 2 ? '#222' : '#555'; cx.fillRect(sx + st * T * 0.1, sy + st * T * 0.2, T - st * T * 0.2, T * 0.2); }
+        if (!open) { cx.strokeStyle = '#ff3b30'; cx.lineWidth = T * 0.08; cx.beginPath(); cx.moveTo(sx + T * 0.2, sy + T * 0.2); cx.lineTo(sx + T * 0.8, sy + T * 0.8); cx.moveTo(sx + T * 0.8, sy + T * 0.2); cx.lineTo(sx + T * 0.2, sy + T * 0.8); cx.stroke(); }
+        else { cx.fillStyle = 'rgba(255,226,58,' + (0.3 + 0.2 * Math.sin(t * 4)) + ')'; cx.fillRect(sx, sy, T, T); }
+      }
+    }
+    // Entities
+    var done = G.floorState(S, S.floor).done;
+    FL.ents.forEach(function (e) {
+      if (!SEEN[e.y * FL.w + e.x]) return;
+      var sx = Math.round(e.x * T - camX), sy = Math.round(e.y * T - camY);
+      if (sx < -T || sy < -T || sx > W || sy > H) return;
+      if (e.k === 'chest') {
+        if (done[e.id]) return;
+        cx.fillStyle = '#6b3f1a'; cx.fillRect(sx + T * 0.15, sy + T * 0.35, T * 0.7, T * 0.5);
+        cx.fillStyle = '#d4af37'; cx.fillRect(sx + T * 0.15, sy + T * 0.5, T * 0.7, T * 0.08); cx.fillRect(sx + T * 0.45, sy + T * 0.45, T * 0.1, T * 0.18);
+        cx.fillStyle = '#8a5a2a'; cx.fillRect(sx + T * 0.15, sy + T * 0.3, T * 0.7, T * 0.15);
+        return;
+      }
+      if (e.k === 'pc') {
+        cx.fillStyle = '#222'; cx.fillRect(sx + T * 0.15, sy + T * 0.1, T * 0.7, T * 0.8);
+        cx.fillStyle = '#5fe6ff'; cx.fillRect(sx + T * 0.22, sy + T * 0.18, T * 0.56, T * 0.4);
+        cx.fillStyle = 'rgba(255,255,255,' + (0.3 + 0.3 * Math.sin(t * 3)) + ')'; cx.fillRect(sx + T * 0.22, sy + T * 0.3, T * 0.56, T * 0.05);
+        return;
+      }
+      var kind = e.k === 'host' ? 'trainer' : e.k;
+      G.drawPerson(cx, sx, sy, T, 2, kind, e.k === 'host' ? 4 : e.look, 0);
+      if (e.k === 'trainer' && !done[e.id]) { cx.fillStyle = '#ff3b30'; cx.font = 'bold ' + Math.floor(T * 0.45) + 'px sans-serif'; cx.fillText('!', sx + T * 0.42, sy - T * 0.05 + Math.sin(t * 5) * 2); }
+      if (e.k === 'boss' && !S.bosses[S.floor]) { cx.strokeStyle = 'rgba(255,59,48,' + (0.5 + 0.4 * Math.sin(t * 3)) + ')'; cx.lineWidth = 2; cx.strokeRect(sx + 1, sy + 1, T - 2, T - 2); }
+    });
+    // Spieler
+    G.drawPerson(cx, Math.round(px * T - camX), Math.round(py * T - camY), T, S.dir, 'player', 0, walkFrame);
+    // Nebel: Sichtradius weich ausblenden, entdeckte Bereiche bleiben gedimmt
+    var gx = px * T - camX + T / 2, gy = py * T - camY + T / 2;
+    var grd = cx.createRadialGradient(gx, gy, T * 2.5, gx, gy, T * 5.2);
+    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,0.6)');
+    cx.fillStyle = grd; cx.fillRect(0, 0, W, H);
+  }
+  var floorShadeCache = {};
+  function shadeFloor(hex, odd) {
+    var k = hex + odd;
+    if (floorShadeCache[k]) return floorShadeCache[k];
+    var n = parseInt(hex.slice(1), 16), f = odd === 2 ? 0.42 : odd ? 0.92 : 1;
+    var c = 'rgb(' + Math.round(((n >> 16) & 255) * f) + ',' + Math.round(((n >> 8) & 255) * f) + ',' + Math.round((n & 255) * f) + ')';
+    floorShadeCache[k] = c; return c;
+  }
+
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (S && mode === 'world' && !anim && held !== null && now - lastStep > STEP_MS) { lastStep = now; tryMove(held); }
+    if (mode === 'battle') drawBattle(now);
+    else if (FL && $('stage').offsetParent !== null) drawWorld(now);
+    if (S) { var d = now - (lastFrame || now); if (d < 1000) S.playMs += d; }
+    lastFrame = now;
+  }
+
+  // ---------------- Kampf-UI ----------------
+  var B = null, BV = null; // Kampfzustand und Anzeigezustand
+  function startWild(m) {
+    S.dex.seen[m.sid] = 1;
+    var sp = G.SPECIES_BY_ID[m.sid];
+    startBattle('wild', [m], { rare: sp.rare || sp.legend });
+  }
+  function startBattle(kind, foes, opt) {
+    held = null;
+    foes.forEach(function (f) { S.dex.seen[f.sid] = 1; });
+    B = G.newBattle(kind, S.team, foes, { name: opt.name, boss: opt.boss, reward: opt.reward, xpShare: !!S.flags.xpshare });
+    B.opt = opt;
+    mode = 'battle';
+    A.sfx('encounter');
+    A.play(opt.boss ? 'boss' : 'battle');
+    BV = { pHp: B.p[B.pi].hp, fHp: B.f[0].hp, pShow: true, fShow: true, ball: false, shake: 0, hitSide: null, hitT: 0, lunge: null, lungeT: 0, enter: performance.now(), pSid: B.p[B.pi].sid, fSid: B.f[0].sid, faintP: 0, faintF: 0, fx: null };
+    var el = $('battle'); el.classList.add('on');
+    resize();
+    renderCards();
+    var intro = kind === 'wild' ? ('Ein wildes ' + G.monName(B.f[0]) + ' (Lv ' + B.f[0].lv + ') erscheint!' + (opt.rare ? ' Ein seltenes Exemplar!' : '')) : (opt.name + ' fordert dich heraus!');
+    showMsg(intro);
+    setTimeout(function () { showMsg(intro + ' Los, ' + G.monName(B.p[B.pi]) + '!'); showActions(); }, 700);
+  }
+  function showMsg(t) { $('bmsg').textContent = t; }
+  function card(side) {
+    var m = side === 'p' ? B.p[B.pi] : B.f[B.fi], max = G.stats(m).hp;
+    var v = side === 'p' ? BV.pHp : BV.fHp, p = Math.max(0, v / max);
+    var c = h('div', { 'class': 'bcard ' + side }, [
+      h('div', null, [h('b', null, [G.monName(m)]), ' Lv ' + m.lv, m.st ? h('span', { 'class': 'st' }, [ST_SHORT[m.st]]) : null, (side === 'f' && B.kind === 'wild' && S.dex.caught[m.sid]) ? h('span', { 'class': 'own' }, ['im Dex']) : null]),
+      h('div', { 'class': 'hpbar' }, [h('div', { 'class': 'hpfill', style: 'width:' + (p * 100) + '%;background:' + (p > 0.5 ? '#4cd964' : p > 0.2 ? '#f2c230' : '#ff3b30') })]),
+      side === 'p' ? h('div', { 'class': 'small' }, [Math.ceil(v) + ' / ' + max + ' KP']) : null,
+      side === 'p' ? h('div', { 'class': 'xpbar' }, [h('div', { style: 'width:' + Math.min(100, ((m.xp - G.xpFor(m.lv)) / Math.max(1, G.xpFor(m.lv + 1) - G.xpFor(m.lv))) * 100) + '%' })]) : null
+    ]);
+    if (side === 'f' && B.kind !== 'wild') {
+      c.appendChild(h('div', { 'class': 'pips' }, B.f.map(function (x) { return h('i', { 'class': x.hp > 0 ? 'a' : '' }); })));
+    }
+    return c;
+  }
+  function renderCards() {
+    var w = $('bcards'); w.innerHTML = '';
+    w.appendChild(card('f')); w.appendChild(card('p'));
+  }
+  function showActions() {
+    var a = $('bact'); a.innerHTML = '';
+    if (B.over) return;
+    if (B.needSwitch) { pickSwitch(true); return; }
+    a.appendChild(btn('Kampf', showMoves, 'act red'));
+    a.appendChild(btn('Team', function () { pickSwitch(false); }, 'act blue'));
+    a.appendChild(btn('Beutel', battleBag, 'act yellow'));
+    a.appendChild(btn('Flucht', function () { act({ type: 'run' }); }, 'act gray'));
+  }
+  function showMoves() {
+    var a = $('bact'), m = B.p[B.pi]; a.innerHTML = '';
+    m.moves.forEach(function (slot, i) {
+      var mv = G.MOVES[slot.id];
+      var foeT = G.SPECIES_BY_ID[B.f[B.fi].sid].types, mult = mv.p > 0 ? G.typeMult(mv.t, foeT) : 1;
+      var hint = !S.dex.seen[B.f[B.fi].sid] ? '' : mult > 1 ? ' ++' : mult < 1 ? ' --' : '';
+      var b = btn('', function () { act({ type: 'move', idx: i }); }, 'move');
+      b.style.background = G.TYPE_COLOR[mv.t];
+      b.appendChild(h('b', null, [mv.n + hint]));
+      b.appendChild(h('span', null, [(mv.p ? 'St ' + mv.p + ' ' : 'Status ') + 'AP ' + slot.pp + '/' + mv.pp]));
+      if (slot.pp <= 0) b.classList.add('dim');
+      a.appendChild(b);
+    });
+    a.appendChild(btn('Zurueck', showActions, 'act gray back'));
+  }
+  function pickSwitch(forced) {
+    var a = $('bact'); a.innerHTML = '';
+    var list = h('div', { 'class': 'blist' });
+    B.p.forEach(function (m, i) {
+      list.appendChild(monRow(m, function () {
+        if (!G.isAlive(m) || i === B.pi) { showMsg(G.isAlive(m) ? 'Das kaempft bereits.' : 'Dieses Biest ist besiegt.'); return; }
+        if (forced) { play(G.forceSwitch(B, i)); } else act({ type: 'switch', idx: i });
+      }));
+    });
+    a.appendChild(list);
+    if (!forced) a.appendChild(btn('Zurueck', showActions, 'act gray back'));
+    else showMsg('Wen schickst du in den Kampf?');
+  }
+  function battleBag() {
+    var a = $('bact'); a.innerHTML = '';
+    var list = h('div', { 'class': 'blist' });
+    Object.keys(G.ITEMS).forEach(function (id) {
+      var n = S.items[id] || 0, it = G.ITEMS[id];
+      if (!n || it.kind === 'repel' || it.kind === 'candy') return;
+      list.appendChild(h('div', { 'class': 'irow', on: { click: function () {
+        A.sfx('select');
+        if (it.kind === 'ball') { act({ type: 'catch', id: id }); return; }
+        if (it.kind === 'flee') {
+          if (B.kind !== 'wild') { showMsg('Gegen Kriecher hilft kein Rauch.'); return; }
+          S.items[id]--; act({ type: 'run', item: true }); return;
+        }
+        // Ziel waehlen
+        a.innerHTML = '';
+        var l2 = h('div', { 'class': 'blist' });
+        B.p.forEach(function (m, i) { l2.appendChild(monRow(m, function () { act({ type: 'item', id: id, target: i }); })); });
+        a.appendChild(l2); a.appendChild(btn('Zurueck', battleBag, 'act gray back'));
+      } } }, [h('b', null, [it.n]), h('span', null, ['x' + n]), h('div', { 'class': 'small' }, [it.d])]));
+    });
+    if (!list.children.length) list.appendChild(h('p', null, ['Dein Beutel ist leer.']));
+    a.appendChild(list);
+    a.appendChild(btn('Zurueck', showActions, 'act gray back'));
+  }
+  function act(action) {
+    if (busy) return;
+    $('bact').innerHTML = '';
+    var ev = G.turn(B, action, rnd, S.items);
+    play(ev);
+  }
+  function tapWait(ms) {
+    return new Promise(function (res) {
+      var done = false;
+      function fin() { if (done) return; done = true; $('battle').removeEventListener('pointerdown', fin); res(); }
+      setTimeout(fin, ms);
+      setTimeout(function () { $('battle').addEventListener('pointerdown', fin); }, 120);
+    });
+  }
+  async function play(ev) {
+    busy = true;
+    for (var i = 0; i < ev.length; i++) {
+      var e = ev[i];
+      if (e.m) { showMsg(e.m); await tapWait(e.m.length > 40 ? 1300 : 950); }
+      else if (e.sfx) {
+        A.sfx(e.sfx);
+        if (e.sfx === 'crit') ach('crit');
+        if (e.sfx === 'super') ach('superEff');
+      }
+      else if (e.anim) { BV.lunge = e.anim; BV.lungeT = performance.now(); BV.fx = { side: e.anim, t: e.t, t0: performance.now() }; A.sfx('atk'); await wait(320); }
+      else if (e.hit) { BV.hitSide = e.hit; BV.hitT = performance.now(); await wait(260); }
+      else if (e.hp) { await tweenHp(e.hp, e.v); }
+      else if (e.faint) { if (e.faint === 'p') BV.faintP = performance.now(); else BV.faintF = performance.now(); await wait(550); }
+      else if (e.sw) {
+        if (e.sw === 'p') { BV.pSid = B.p[B.pi].sid; BV.pHp = B.p[B.pi].hp; BV.faintP = 0; }
+        else { BV.fSid = B.f[B.fi].sid; BV.fHp = B.f[B.fi].hp; BV.faintF = 0; S.dex.seen[B.f[B.fi].sid] = 1; }
+        BV.enter = performance.now(); renderCards(); await wait(400);
+      }
+      else if (e.ball) { BV.ball = true; BV.shake = 0; BV.ballT = performance.now(); await wait(500); }
+      else if (e.shake !== undefined) { BV.shake = e.shake + 1; BV.shakeT = performance.now(); await wait(650); }
+      else if (e.unball) { BV.ball = false; await wait(200); }
+      else if (e.stUp || e.lvl) { renderCards(); }
+      else if (e.need) { renderCards(); }
+      else if (e.end) { busy = false; await endBattle(e.end); return; }
+    }
+    renderCards();
+    busy = false;
+    showActions();
+  }
+  function tweenHp(side, to) {
+    return new Promise(function (res) {
+      var key = side === 'p' ? 'pHp' : 'fHp', from = BV[key], t0 = performance.now(), dur = 420;
+      function step() {
+        var k = Math.min(1, (performance.now() - t0) / dur);
+        BV[key] = from + (to - from) * k; renderCards();
+        if (k < 1) requestAnimationFrame(step); else res();
+      }
+      step();
+    });
+  }
+
+  async function endBattle(res) {
+    var opt = B.opt, b = B;
+    await wait(300);
+    if (res === 'win') {
+      S.money += b.money;
+      ach('firstWin');
+      if (b.crit) ach('crit');
+      if (opt.ent) { G.floorState(S, S.floor).done[opt.ent.id] = 1; S.stats.trainers++; }
+    }
+    if (res === 'catch') {
+      var m = b.f[0];
+      m._fainted = false; m.pending = [];
+      S.dex.caught[m.sid] = 1; S.stats.catches++;
+      var where = S.team.length < 6 ? 'team' : 'box';
+      if (where === 'team') S.team.push(m); else S.box.push(m);
+      ach('firstCatch');
+      var sp = G.SPECIES_BY_ID[m.sid];
+      if (sp.rare) ach('rare');
+      if (sp.legend) ach('legend');
+      await sayAsync([announcer('catch'), G.monName(m) + (where === 'team' ? ' ist jetzt in deinem Team.' : ' wurde in die Box geschickt (Team ist voll).')], 'MODERATOR');
+    }
+    $('battle').classList.remove('on');
+    mode = 'world';
+    B = null;
+    if (res === 'lose') {
+      ach('fainted');
+      A.sfx('lose');
+      var lost = Math.floor(S.money / 2);
+      S.money -= lost;
+      S.team.forEach(G.healFull);
+      S.pos = { f: S.floor, x: FL.safeSpawn.x, y: FL.safeSpawn.y };
+      reveal();
+      await sayAsync([announcer('faint'), 'Du verlierst ' + fmt(lost) + ' Muenzen an die Wettbueros.'], 'MODERATOR');
+    }
+    // Neue Attacken und Entwicklungen erst nach dem Kampf: so bleibt der Kampffluss kurz
+    for (var i = 0; i < S.team.length; i++) {
+      var mm = S.team[i];
+      while (mm.pending && mm.pending.length) { await learnPrompt(mm, mm.pending.shift()); }
+    }
+    for (var j = 0; j < S.team.length; j++) {
+      var me = S.team[j];
+      while (G.evoTarget(me)) await evolveScene(me);
+    }
+    if (res === 'win' && opt.boss) await bossWon();
+    playAreaMusic();
+    checkAch();
+    updateHud();
+    save();
+  }
+  function sayAsync(lines, who) { return new Promise(function (r) { say(lines, r, who); }); }
+  function learnPrompt(m, moveId) {
+    return new Promise(function (res) {
+      var mv = G.MOVES[moveId];
+      if (m.moves.some(function (x) { return x.id === moveId; })) { res(); return; }
+      mode = 'menu';
+      panel('Neue Attacke', function (body) {
+        body.appendChild(h('p', { 'class': 'lead' }, [G.monName(m) + ' moechte ' + mv.n + ' (' + mv.t + (mv.p ? ', St ' + mv.p : ', Status') + ') lernen. Welche Attacke soll dafuer vergessen werden?']));
+        m.moves.forEach(function (slot, i) {
+          var o = G.MOVES[slot.id];
+          var b = btn(o.n + ' (' + o.t + (o.p ? ', St ' + o.p : ', Status') + ')', function () {
+            m.moves[i] = { id: moveId, pp: mv.pp }; closeAllPanels(); mode = 'world';
+            say(G.monName(m) + ' vergisst ' + o.n + ' und lernt ' + mv.n + '!', res);
+          }, 'wide');
+          b.style.borderLeft = '8px solid ' + G.TYPE_COLOR[o.t];
+          body.appendChild(b);
+        });
+        body.appendChild(btn('Nicht lernen', function () { closeAllPanels(); mode = 'world'; res(); }, 'wide gray'));
+      }, true);
+    });
+  }
+  function evolveScene(m) {
+    return new Promise(function (res) {
+      var from = G.SPECIES_BY_ID[m.sid];
+      mode = 'menu';
+      A.sfx('evolve');
+      panel('Entwicklung', function (body) {
+        var c = h('canvas', { width: 192, height: 192, 'class': 'evo' });
+        body.appendChild(h('p', { 'class': 'lead' }, ['Was? ' + G.monName(m) + ' entwickelt sich!']));
+        body.appendChild(c);
+        var x = c.getContext('2d'), t0 = performance.now(), to = G.evoTarget(m), done = false;
+        function frame(now) {
+          if (done) return;
+          var k = (now - t0) / 2600;
+          x.clearRect(0, 0, 192, 192);
+          var flick = Math.sin(k * k * 60) > 0;
+          G.drawMon(x, k < 1 ? (flick ? from.id : to) : to, 0, 0, 192, false, k < 1 ? 0.9 : 1);
+          if (k < 1) { x.fillStyle = 'rgba(255,255,255,' + (0.5 * Math.abs(Math.sin(k * 20))) + ')'; x.fillRect(0, 0, 192, 192); requestAnimationFrame(frame); }
+          else {
+            done = true;
+            var oldName = G.monName(m);
+            G.evolve(m);
+            S.dex.caught[m.sid] = 1; S.dex.seen[m.sid] = 1;
+            ach('evolve');
+            body.appendChild(h('p', { 'class': 'lead' }, [oldName + ' wurde zu ' + G.SPECIES_BY_ID[m.sid].n + '!']));
+            body.appendChild(btn('Weiter', function () { closeAllPanels(); mode = 'world'; res(); }, 'wide'));
+          }
+        }
+        requestAnimationFrame(frame);
+      }, true);
+    });
+  }
+  async function bossWon() {
+    S.bosses[S.floor] = 1;
+    var bd = FL.def.boss;
+    var lines = [announcer('boss')];
+    if (bd.gift === 'xpshare' && !S.flags.xpshare) { S.flags.xpshare = 1; lines.push(bd.n + ' wirft dir einen EP-Teiler zu: "Nimm schon. Ich brauch ihn nicht mehr." Ab jetzt erhaelt das ganze Team Erfahrung.'); }
+    S.boxes.silber++; lines.push('Bonus: eine Silber-Lootbox fuer den Bosssieg.');
+    if (bd.final) {
+      ach('champion');
+      lines.push('MODERATOR: Das... war nicht im Drehbuch. Du hast den Showmaster besiegt!',
+        'Die Kameras gehoeren jetzt dir. Die Oberflaeche ist wieder offen, aber ehrlich: wer will da schon hin?',
+        'Unter Studio Null liegen endlose Bonusetagen. Und tief unten wartet der Abgrundwal. Sprich mit mir im Schutzraum, wenn du bereit bist.');
+    }
+    await sayAsync(lines, 'MODERATOR');
+  }
+
+  // Kampfszene zeichnen
+  var bcv, bcx;
+  function drawBattle(now) {
+    bcv = bcv || $('bcv'); bcx = bcx || bcv.getContext('2d');
+    if (!BV) return;
+    var W = bcv.width, H = bcv.height;
+    var pal = FL ? FL.def.pal : ['#111', '#222', '#333', '#888'];
+    var g = bcx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, pal[0]); g.addColorStop(0.55, pal[1]); g.addColorStop(1, pal[2]);
+    bcx.fillStyle = g; bcx.fillRect(0, 0, W, H);
+    // Scheinwerfer: Show-Charakter der Welt
+    var t = now / 1000;
+    bcx.fillStyle = 'rgba(255,255,220,0.06)';
+    for (var s = 0; s < 2; s++) { var ox = W * (0.3 + 0.4 * s) + Math.sin(t * 0.7 + s * 2) * W * 0.12; bcx.beginPath(); bcx.moveTo(ox, 0); bcx.lineTo(ox - W * 0.18, H); bcx.lineTo(ox + W * 0.18, H); bcx.fill(); }
+    var sz = Math.min(W * 0.42, H * 0.5);
+    var fxX = W * 0.7 - sz / 2, fxY = H * 0.2, pxX = W * 0.28 - sz / 2, pxY = H * 0.5;
+    bcx.fillStyle = 'rgba(0,0,0,0.35)';
+    bcx.beginPath(); bcx.ellipse(W * 0.7, fxY + sz * 0.92, sz * 0.5, sz * 0.12, 0, 0, 7); bcx.fill();
+    bcx.beginPath(); bcx.ellipse(W * 0.28, pxY + sz * 0.92, sz * 0.55, sz * 0.13, 0, 0, 7); bcx.fill();
+    var ent = Math.min(1, (now - BV.enter) / 350);
+    function offs(side) {
+      var o = { x: 0, y: 0, a: 1 };
+      if (BV.lunge === side) { var k = (now - BV.lungeT) / 300; if (k < 1) { var d = Math.sin(k * Math.PI) * sz * 0.18; o.x += side === 'p' ? d : -d; o.y += side === 'p' ? -d * 0.4 : d * 0.4; } }
+      if (BV.hitSide === side) { var kh = (now - BV.hitT) / 400; if (kh < 1) { o.a = Math.floor(kh * 10) % 2 ? 0.2 : 1; o.x += Math.sin(kh * 40) * 4; } }
+      var ft = side === 'p' ? BV.faintP : BV.faintF;
+      if (ft) { var kf = Math.min(1, (now - ft) / 500); o.y += kf * sz * 0.5; o.a *= 1 - kf; }
+      return o;
+    }
+    var bob = Math.sin(t * 3) * sz * 0.015;
+    if (!BV.ball) {
+      var of = offs('f');
+      if (of.a > 0.01) G.drawMon(bcx, BV.fSid, fxX + of.x + (1 - ent) * W * 0.3, fxY + of.y + bob, sz, true, of.a);
+    } else {
+      var bx = W * 0.7, by = fxY + sz * 0.7, wob = BV.shake ? Math.sin((now - BV.shakeT) / 70) * 0.35 * Math.max(0, 1 - (now - BV.shakeT) / 600) : 0;
+      bcx.save(); bcx.translate(bx, by); bcx.rotate(wob);
+      var r = sz * 0.12;
+      bcx.fillStyle = '#2a2a3a'; bcx.beginPath(); bcx.arc(0, 0, r, 0, 7); bcx.fill();
+      bcx.fillStyle = '#5fe6ff'; bcx.fillRect(-r, -r * 0.15, r * 2, r * 0.3);
+      bcx.fillStyle = '#fff'; bcx.beginPath(); bcx.arc(0, 0, r * 0.3, 0, 7); bcx.fill();
+      bcx.restore();
+    }
+    var op = offs('p');
+    if (op.a > 0.01) G.drawMon(bcx, BV.pSid, pxX + op.x - (1 - ent) * W * 0.3, pxY + op.y - bob, sz * 1.1, false, op.a);
+    // Typ-Effekt als kurzer Partikelschwarm am Ziel
+    if (BV.fx) {
+      var kx = (now - BV.fx.t0) / 450;
+      if (kx < 1) {
+        var tx = BV.fx.side === 'p' ? W * 0.7 : W * 0.28, ty = BV.fx.side === 'p' ? fxY + sz * 0.5 : pxY + sz * 0.5;
+        bcx.fillStyle = G.TYPE_COLOR[BV.fx.t];
+        for (var q = 0; q < 10; q++) { var ang = q * 0.63 + kx * 3, rr = kx * sz * 0.45; bcx.globalAlpha = 1 - kx; bcx.fillRect(tx + Math.cos(ang) * rr, ty + Math.sin(ang) * rr, sz * 0.05, sz * 0.05); }
+        bcx.globalAlpha = 1;
+      } else BV.fx = null;
+    }
+  }
+
+  // ---------------- Menue ----------------
+  function openMenu() {
+    mode = 'menu';
+    panel('Menue', function (body) {
+      var grid = h('div', { 'class': 'mgrid' });
+      [['Team', openTeam], ['Beutel', openBag], ['Lootboxen' + (S.boxes.bronze + S.boxes.silber + S.boxes.gold ? ' (' + (S.boxes.bronze + S.boxes.silber + S.boxes.gold) + ')' : ''), openBoxes], ['Biestdex', openDex], ['Erfolge', openAch], ['Karte', openMap], ['Optionen', openOptions]].forEach(function (e) { grid.appendChild(btn(e[0], e[1], 'tile')); });
+      body.appendChild(grid);
+      var mins = Math.floor(S.playMs / 60000);
+      body.appendChild(h('p', { 'class': 'small center' }, ['Spielzeit ' + Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min  |  Dex ' + Object.keys(S.dex.caught).length + '/' + G.SPECIES.length + '  |  Erfolge ' + Object.keys(S.ach).length + '/' + Object.keys(G.ACHIEVEMENTS).length]));
+    });
+  }
+  function openTeam() {
+    panel('Team', function (body) {
+      body.appendChild(h('p', { 'class': 'small' }, ['Tippe ein Biest fuer Details. Das erste Biest kaempft zuerst.']));
+      S.team.forEach(function (m, i) { body.appendChild(monRow(m, function () { monDetail(m, i); })); });
+    });
+  }
+  function monDetail(m, i) {
+    panel(G.monName(m), function (body) {
+      var sp = G.SPECIES_BY_ID[m.sid], st = G.stats(m);
+      body.appendChild(h('div', { 'class': 'detail' }, [G.monImg(m.sid, 120), h('div', null, [
+        h('div', null, sp.types.map(typeTag)),
+        h('p', { 'class': 'small' }, [sp.desc]),
+        h('div', null, ['Lv ' + m.lv + '  |  KP ' + m.hp + '/' + st.hp]),
+        h('div', null, ['Ang ' + st.atk + '  Ver ' + st.def + '  Ini ' + st.spd]),
+        h('div', { 'class': 'small' }, ['EP bis Level ' + (m.lv + 1) + ': ' + Math.max(0, G.xpFor(m.lv + 1) - m.xp)]),
+        sp.evo ? h('div', { 'class': 'small' }, ['Entwickelt sich ab Level ' + sp.evo[1] + '.']) : null
+      ])]));
+      m.moves.forEach(function (slot) {
+        var mv = G.MOVES[slot.id];
+        body.appendChild(h('div', { 'class': 'mvrow', style: 'border-left:8px solid ' + G.TYPE_COLOR[mv.t] }, [h('b', null, [mv.n]), ' ' + mv.t + (mv.p ? ' | St ' + mv.p + ' | Gen ' + mv.a : ' | Status') + ' | AP ' + slot.pp + '/' + mv.pp]));
+      });
+      if (i > 0) body.appendChild(btn('An die Spitze setzen', function () { S.team.splice(i, 1); S.team.unshift(m); closePanel(); refreshPanel(); }, 'wide'));
+    });
+  }
+  function openBag() {
+    panel('Beutel', function (body) {
+      var any = false;
+      Object.keys(G.ITEMS).forEach(function (id) {
+        var n = S.items[id] || 0, it = G.ITEMS[id];
+        if (!n) return; any = true;
+        body.appendChild(h('div', { 'class': 'irow', on: { click: function () { useFromBag(id); } } }, [h('b', null, [it.n]), h('span', null, ['x' + n]), h('div', { 'class': 'small' }, [it.d])]));
+      });
+      if (!any) body.appendChild(h('p', null, ['Leer. Der Laden im Schutzraum hilft.']));
+      if (S.repel > 0) body.appendChild(h('p', { 'class': 'small' }, ['Abwehrspray aktiv: noch ' + S.repel + ' Schritte.']));
+    });
+  }
+  function useFromBag(id) {
+    var it = G.ITEMS[id];
+    A.sfx('select');
+    if (it.kind === 'ball' || it.kind === 'flee') { toast(it.n, 'Nur im Kampf verwendbar.'); return; }
+    if (it.kind === 'repel') { S.items[id]--; S.repel = it.v; A.sfx('buff'); toast(it.n, 'Schwaechere wilde Biester meiden dich fuer ' + it.v + ' Schritte.'); refreshPanel(); return; }
+    panel(it.n + ' benutzen', function (body) {
+      S.team.forEach(function (m) {
+        body.appendChild(monRow(m, function () {
+          var r = G.useItem(id, m);
+          if (r.ok) { S.items[id]--; A.sfx('heal'); }
+          toast(it.n, r.msg);
+          closePanel(); refreshPanel();
+          if (r.ok && it.kind === 'candy') { afterCandy(m); }
+        }));
+      });
+    });
+  }
+  async function afterCandy(m) {
+    closeAllPanels(); mode = 'world';
+    while (m.pending.length) await learnPrompt(m, m.pending.shift());
+    if (G.evoTarget(m)) await evolveScene(m);
+    checkAch(); save();
+  }
+  function openBoxes() {
+    panel('Lootboxen', function (body) {
+      body.appendChild(h('p', { 'class': 'small' }, ['Erfolge und Bosse belohnen dich mit Lootboxen. Die Sponsoren bestehen darauf.']));
+      ['bronze', 'silber', 'gold'].forEach(function (k) {
+        var n = S.boxes[k];
+        body.appendChild(h('div', { 'class': 'irow box-' + k }, [h('b', null, [G.LOOTBOX[k].n]), h('span', null, ['x' + n]),
+          n ? btn('Oeffnen', function () {
+            S.boxes[k]--;
+            var res = G.openLootbox(k, rnd), txt = [];
+            res.forEach(function (o) { if (o.money) { S.money += o.money; txt.push(fmt(o.money) + ' Muenzen'); } else { S.items[o.item] = (S.items[o.item] || 0) + o.n; txt.push(o.n + 'x ' + G.ITEMS[o.item].n); } });
+            A.sfx('chest'); toast(G.LOOTBOX[k].n, 'Inhalt: ' + txt.join(', ') + '.');
+            checkAch(); updateHud(); save(); refreshPanel();
+          }, 'small') : null]));
+      });
+    });
+  }
+  function openDex() {
+    panel('Biestdex', function (body) {
+      var grid = h('div', { 'class': 'dex' });
+      G.SPECIES.forEach(function (sp) {
+        var c = S.dex.caught[sp.id], s = S.dex.seen[sp.id];
+        var cell = h('div', { 'class': 'dcell' + (c ? '' : ' unk'), on: { click: function () {
+          if (!c) return; A.sfx('select');
+          panel(sp.n, function (b) {
+            b.appendChild(h('div', { 'class': 'detail' }, [G.monImg(sp.id, 120), h('div', null, [h('div', null, sp.types.map(typeTag)), h('p', null, [sp.desc]), h('div', { 'class': 'small' }, ['Basiswerte: KP ' + sp.s[0] + ' Ang ' + sp.s[1] + ' Ver ' + sp.s[2] + ' Ini ' + sp.s[3]]), sp.evo ? h('div', { 'class': 'small' }, ['Entwicklung ab Level ' + sp.evo[1]]) : null])]));
+          });
+        } } });
+        if (c || s) { var im = G.monImg(sp.id, 56); if (!c) im.style.filter = 'brightness(0)'; cell.appendChild(im); }
+        else cell.appendChild(h('div', { 'class': 'q' }, ['?']));
+        cell.appendChild(h('div', { 'class': 'small' }, ['#' + sp.no + ' ' + (c || s ? sp.n : '???')]));
+        grid.appendChild(cell);
+      });
+      body.appendChild(grid);
+    });
+  }
+  function openAch() {
+    panel('Erfolge', function (body) {
+      Object.keys(G.ACHIEVEMENTS).forEach(function (id) {
+        var a = G.ACHIEVEMENTS[id], got = S.ach[id];
+        body.appendChild(h('div', { 'class': 'irow' + (got ? '' : ' unk') }, [h('b', null, [got ? a.n : '???']), h('span', null, [a.box]), h('div', { 'class': 'small' }, [got ? a.d : 'Noch nicht freigeschaltet.'])]));
+      });
+    });
+  }
+  function openMap() {
+    panel('Karte: ' + FL.def.n, function (body) {
+      var c = h('canvas', { width: FL.w * 6, height: FL.h * 6, 'class': 'map' });
+      var x = c.getContext('2d');
+      for (var y = 0; y < FL.h; y++) for (var xx = 0; xx < FL.w; xx++) {
+        var i = y * FL.w + xx; if (!SEEN[i]) continue;
+        var v = FL.t[i];
+        x.fillStyle = v === 0 || v === 6 ? '#2a2a3a' : v === 2 ? '#4f8f5a' : v === 3 ? '#ffe23a' : v === 5 ? '#6a5aa5' : '#8a8aa0';
+        x.fillRect(xx * 6, y * 6, 6, 6);
+      }
+      x.fillStyle = '#ff3b30'; x.fillRect(S.pos.x * 6 - 1, S.pos.y * 6 - 1, 8, 8);
+      body.appendChild(c);
+      body.appendChild(h('p', { 'class': 'small' }, ['Rot: du. Gelb: Treppe. Lila: Schutzraum. Gruen: hohes Gras.' + (S.bosses[S.floor] ? ' Boss besiegt.' : ' Boss noch nicht besiegt.')]));
+    });
+  }
+  function openOptions() {
+    panel('Optionen', function (body) {
+      body.appendChild(btn('Musik: ' + (A.music ? 'an' : 'aus'), function () { S.settings.music = A.music ? 0 : 1; A.setMusic(S.settings.music); if (A.music) playAreaMusic(); save(); refreshPanel(); }, 'wide'));
+      body.appendChild(btn('Effekte: ' + (A.sfxOn ? 'an' : 'aus'), function () { S.settings.sfx = A.sfxOn ? 0 : 1; A.sfxOn = S.settings.sfx; save(); refreshPanel(); }, 'wide'));
+      body.appendChild(btn('Spielstand-Code anzeigen', function () {
+        save();
+        panel('Spielstand-Code', function (b) {
+          var code = btoa(unescape(encodeURIComponent(G.serialize(S))));
+          var ta = h('textarea', { readonly: 'readonly' }); ta.value = code;
+          b.appendChild(h('p', { 'class': 'small' }, ['Sicherheitskopie, falls der Browser den Speicher leert. Kopieren und z.B. in Notizen ablegen.']));
+          b.appendChild(ta);
+          b.appendChild(btn('Kopieren', function () { try { navigator.clipboard.writeText(code).then(function () { toast('Kopiert', 'Code in der Zwischenablage.'); }, function () { ta.select(); }); } catch (e) { ta.select(); } }, 'wide'));
+        });
+      }, 'wide'));
+      body.appendChild(btn('Spielstand-Code laden', function () {
+        panel('Code laden', function (b) {
+          var ta = h('textarea'); b.appendChild(ta);
+          b.appendChild(btn('Laden', function () {
+            try { var s = G.deserialize(decodeURIComponent(escape(atob(ta.value.trim())))); S = s; closeAllPanels(); S.pos = s.pos; enterFloor(s.floor); mode = 'world'; save(); toast('Geladen', 'Spielstand wiederhergestellt.'); }
+            catch (e) { toast('Fehler', 'Der Code ist ungueltig.'); }
+          }, 'wide'));
+        });
+      }, 'wide'));
+      body.appendChild(btn('Neues Spiel', function () {
+        choice('Wirklich neu anfangen? Der aktuelle Spielstand wird ueberschrieben.', ['Ja, neu starten', 'Abbrechen'], function (i) { if (i === 0) { closeAllPanels(); newGame(); } });
+      }, 'wide red'));
+      body.appendChild(h('p', { 'class': 'small' }, ['Hinweis: Auf dem iPhone muss der Stummschalter aus sein, damit Ton zu hoeren ist.']));
+    });
+  }
+  function openShop() {
+    mode = 'menu';
+    panel('Laden von Krempel-Kurt', function (body) {
+      body.appendChild(h('p', { 'class': 'small' }, ['"Alles legal. Fast alles." -- Guthaben: ' + fmt(S.money) + ' M']));
+      Object.keys(G.ITEMS).forEach(function (id) {
+        var it = G.ITEMS[id];
+        if (it.minFloor > S.floor + 1 || !it.price) return;
+        var row = h('div', { 'class': 'irow' }, [h('b', null, [it.n]), h('span', null, [fmt(it.price) + ' M']), h('div', { 'class': 'small' }, [it.d + ' Im Beutel: ' + (S.items[id] || 0)])]);
+        [1, 5].forEach(function (q) {
+          row.appendChild(btn('+' + q, function () {
+            if (S.money < it.price * q) { toast('Zu teuer', 'Du hast nicht genug Muenzen.'); return; }
+            S.money -= it.price * q; S.items[id] = (S.items[id] || 0) + q; A.sfx('chest'); updateHud(); save(); refreshPanel();
+          }, 'small'));
+        });
+        body.appendChild(row);
+      });
+    });
+  }
+  function openPC() {
+    mode = 'menu';
+    panel('Box-Terminal', function (body) {
+      body.appendChild(h('p', { 'class': 'small' }, ['Tippe ein Teammitglied, um es in die Box zu legen, oder ein Box-Biest, um es ins Team zu holen. Biester in der Box werden geheilt.']));
+      body.appendChild(h('h4', null, ['Team (' + S.team.length + '/6)']));
+      S.team.forEach(function (m, i) {
+        body.appendChild(monRow(m, function () {
+          if (S.team.length <= 1) { toast('Nein', 'Mindestens ein Biest muss dich begleiten.'); return; }
+          S.team.splice(i, 1); G.healFull(m); S.box.push(m); save(); refreshPanel();
+        }));
+      });
+      body.appendChild(h('h4', null, ['Box (' + S.box.length + ')']));
+      if (!S.box.length) body.appendChild(h('p', { 'class': 'small' }, ['Leer.']));
+      S.box.forEach(function (m, i) {
+        body.appendChild(monRow(m, function () {
+          if (S.team.length >= 6) { toast('Team voll', 'Lege zuerst ein Biest in die Box.'); return; }
+          S.box.splice(i, 1); S.team.push(m); save(); refreshPanel();
+        }));
+      });
+    });
+  }
+
+  // ---------------- Start ----------------
+  function newGame() {
+    S = G.newState((Math.random() * 4294967295) >>> 0);
+    A.music = S.settings.music; A.sfxOn = S.settings.sfx;
+    $('title').classList.remove('on');
+    FL = null;
+    A.play('title');
+    say(G.ANNOUNCER.intro, function () { pickStarter(); }, 'MODERATOR');
+  }
+  function pickStarter() {
+    mode = 'menu';
+    panel('Waehle dein erstes Biest', function (body) {
+      G.SPECIES.filter(function (s) { return s.starter; }).forEach(function (sp) {
+        body.appendChild(h('div', { 'class': 'starter', on: { click: function () {
+          A.sfx('select');
+          choice(sp.n + ' (' + sp.types.join('/') + ') waehlen?', ['Ja', 'Nein'], function (i) {
+            if (i !== 0) return;
+            var m = G.makeMon(sp.id, 5, rnd);
+            S.team.push(m); S.dex.caught[sp.id] = 1; S.dex.seen[sp.id] = 1;
+            closeAllPanels(); mode = 'world';
+            enterFloor(0);
+            save();
+            say(['MODERATOR: ' + sp.n + '! Mutige Wahl. Oder dumme. Wir werden sehen.', 'Bewege dich mit dem Steuerkreuz. A interagiert, B oeffnet das Menue.', 'Der Schutzraum liegt ganz in der Naehe. Dort findest du Heilung, einen Laden und das Box-Terminal.'], null, 'MODERATOR');
+          });
+        } } }, [G.monImg(sp.id, 96), h('div', null, [h('b', null, [sp.n]), h('div', null, sp.types.map(typeTag)), h('p', { 'class': 'small' }, [sp.desc])])]));
+      });
+    }, true);
+  }
+  function continueGame(s) {
+    S = s;
+    A.music = S.settings.music; A.sfxOn = S.settings.sfx;
+    $('title').classList.remove('on');
+    mode = 'world';
+    enterFloor(S.floor);
+    // Falls der letzte Stand mitten in einem Kampf entstand und alle besiegt sind, im Schutzraum aufwachen
+    if (!S.team.some(G.isAlive)) { S.team.forEach(G.healFull); S.pos = { f: S.floor, x: FL.safeSpawn.x, y: FL.safeSpawn.y }; }
+    toast('Willkommen zurueck', 'Etage ' + (S.floor + 1) + ', ' + S.team.length + ' Biester im Team.');
+  }
+  function title() {
+    var s = loadSave();
+    var t = $('title'), b = $('titlebtns'); b.innerHTML = '';
+    if (s) b.appendChild(btn('Weiterspielen', function () { A.init(); continueGame(s); }, 'wide big'));
+    b.appendChild(btn('Neues Spiel', function () {
+      A.init();
+      if (s) choice('Neues Spiel starten? Der vorhandene Spielstand wird ueberschrieben.', ['Ja', 'Abbrechen'], function (i) { if (i === 0) newGame(); });
+      else newGame();
+    }, 'wide big' + (s ? ' gray' : '')));
+    t.classList.add('on');
+    var c = $('titlecv'), x = c.getContext('2d');
+    var ids = ['feuerbaron', 'admiralotter', 'wurzelfuerstin', 'hackerratte', 'safeknacker', 'phantomkatze'];
+    x.clearRect(0, 0, c.width, c.height);
+    ids.forEach(function (id, i) { G.drawMon(x, id, 8 + (i % 3) * 104, 6 + Math.floor(i / 3) * 96, 96, i % 2 === 1, 0.95); });
+  }
+
+  function bindInput() {
+    var pad = $('pad');
+    Array.prototype.forEach.call(pad.querySelectorAll('[data-d]'), function (el) {
+      var d = +el.getAttribute('data-d');
+      el.addEventListener('pointerdown', function (e) { e.preventDefault(); A.init(); if (dlgQ) { return; } held = d; lastStep = 0; el.classList.add('down'); });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { el.addEventListener(n, function () { if (held === d) held = null; el.classList.remove('down'); }); });
+    });
+    $('ba').addEventListener('pointerdown', function (e) { e.preventDefault(); A.init(); onA(); });
+    $('bb').addEventListener('pointerdown', function (e) { e.preventDefault(); A.init(); onB(); });
+    $('dlg').addEventListener('pointerdown', function (e) { e.preventDefault(); if (dlgQ) dlgQ(); });
+    $('hudmenu').addEventListener('click', function () { if (mode === 'world') openMenu(); });
+    var keyDir = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 };
+    document.addEventListener('keydown', function (e) {
+      A.init();
+      if (keyDir[e.code] !== undefined) { if (!dlgQ) held = keyDir[e.code]; e.preventDefault(); }
+      else if (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyX') { onA(); e.preventDefault(); }
+      else if (e.code === 'Escape' || e.code === 'KeyZ' || e.code === 'Backspace') { onB(); }
+    });
+    document.addEventListener('keyup', function (e) { if (keyDir[e.code] === held) held = null; });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) { save(); A.stop(); } else if (A.ctx) { A.ctx.resume(); if (mode === 'battle') A.play(B && B.opt.boss ? 'boss' : 'battle'); else playAreaMusic(); } });
+    window.addEventListener('pagehide', save);
+    window.addEventListener('resize', resize);
+    // Doppeltipp-Zoom auf iOS verhindern, sonst springt das Layout beim schnellen Tippen
+    document.addEventListener('dblclick', function (e) { e.preventDefault(); }, { passive: false });
+  }
+
+  // Manche iOS-Webviews (z.B. eingebettete Vorschau in Apps) liefern nach einem Tipp kein click-Event.
+  // Daher wird ein ausgebliebener Klick nach pointerup nachgereicht; echte Klicks werden nicht doppelt ausgeloest.
+  function tapShim() {
+    var down = null;
+    document.addEventListener('pointerdown', function (e) { down = { t: e.target, x: e.clientX, y: e.clientY }; }, true);
+    document.addEventListener('pointercancel', function () { down = null; }, true);
+    document.addEventListener('pointerup', function (e) {
+      if (!down) return;
+      var d = down; down = null;
+      if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 18) return;
+      var tgt = d.t, clicked = false;
+      function onc() { clicked = true; }
+      document.addEventListener('click', onc, true);
+      setTimeout(function () {
+        document.removeEventListener('click', onc, true);
+        if (!clicked && document.contains(tgt) && tgt.closest && tgt.closest('button,.mrow,.irow,.starter,.dcell')) tgt.click();
+      }, 450);
+    }, true);
+  }
+
+  G.boot = function () {
+    tapShim();
+    resize(); bindInput(); title();
+    requestAnimationFrame(loop);
+  };
+
+  // Testschnittstelle fuer automatisierte Browser-Tests
+  G.debug = {
+    state: function () { return S; }, floor: function () { return FL; }, mode: function () { return mode; },
+    wild: function (sid, lv) { startWild(G.makeMon(sid, lv, rnd)); },
+    boss: function () { var e = FL.ents.filter(function (x) { return x.k === 'boss'; })[0]; bossTalk(e); },
+    teleport: function (x, y) { S.pos.x = x; S.pos.y = y; reveal(); },
+    busy: function () { return busy; }, battle: function () { return B; },
+    menu: openMenu, setRnd: function (f) { rnd = f; }
+  };
+})(window.G);
+</script>
+<script>document.getElementById('app').appendChild(document.getElementById('dlg'));G.boot();</script>
+<script>if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js').catch(function(){});}</script>
+</body></html>
