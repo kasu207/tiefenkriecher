@@ -1594,17 +1594,109 @@ window.G = window.G || {}; window.G.ZZFX = ZZFX;})();</script>
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   // ---------------- Speichern ----------------
+  // Zwei unabhaengige Speicherorte: Leert iOS einen davon, bleibt der andere als Rueckfallebene.
+  var IDB = null;
+  function idb() {
+    if (IDB) return IDB;
+    IDB = new Promise(function (res) {
+      try {
+        var rq = indexedDB.open('tiefenkriecher', 1);
+        rq.onupgradeneeded = function () { rq.result.createObjectStore('save'); };
+        rq.onsuccess = function () { res(rq.result); };
+        rq.onerror = function () { res(null); };
+      } catch (e) { res(null); }
+    });
+    return IDB;
+  }
+  function idbPut(str) {
+    idb().then(function (db) { if (!db) return; try { db.transaction('save', 'readwrite').objectStore('save').put(str, SAVE_KEY); } catch (e) { } });
+  }
+  function idbGet() {
+    return idb().then(function (db) {
+      if (!db) return null;
+      return new Promise(function (res) {
+        try { var rq = db.transaction('save').objectStore('save').get(SAVE_KEY); rq.onsuccess = function () { res(rq.result || null); }; rq.onerror = function () { res(null); }; }
+        catch (e) { res(null); }
+      });
+    });
+  }
   function save() {
     if (!S) return;
+    var str;
     try {
       var fs = G.floorState(S, S.floor);
       fs.seen = packSeen();
-      localStorage.setItem(SAVE_KEY, G.serialize(S));
-    } catch (e) { /* privater Modus: Spiel laeuft weiter, nur ohne Speichern */ }
+      S.savedAt = Date.now();
+      str = G.serialize(S);
+    } catch (e) { return; }
+    try { localStorage.setItem(SAVE_KEY, str); } catch (e) { /* privater Modus o.ae.: IndexedDB uebernimmt */ }
+    idbPut(str);
   }
+  function parseSave(str) { try { return str ? G.deserialize(str) : null; } catch (e) { return null; } }
   function loadSave() {
-    try { var s = localStorage.getItem(SAVE_KEY); return s ? G.deserialize(s) : null; } catch (e) { return null; }
+    try { return parseSave(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; }
   }
+  // Nimmt den neueren der beiden Staende, damit ein halb geleerter Speicher keinen Fortschritt kostet.
+  function loadBestSave() {
+    var ls = loadSave();
+    return idbGet().then(function (str) {
+      var ib = parseSave(str);
+      if (ls && ib) return (ib.savedAt || 0) > (ls.savedAt || 0) ? ib : ls;
+      return ls || ib;
+    }, function () { return ls; });
+  }
+  function exportFile() {
+    save();
+    var name = 'tiefenkriecher-etage' + (S.floor + 1) + '-' + new Date().toISOString().slice(0, 10) + '.json';
+    var str = G.serialize(S);
+    try {
+      var file = new File([str], name, { type: 'application/json' });
+      // Teilen-Menue bietet auf dem iPhone "In Dateien sichern" an
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'Tiefenkriecher Spielstand' }).then(function () { toast('Gesichert', 'Spielstand-Datei wurde weitergegeben.'); }, function () { });
+        return;
+      }
+    } catch (e) { }
+    try {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([str], { type: 'application/json' }));
+      a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      toast('Gesichert', 'Datei ' + name + ' wurde heruntergeladen.');
+    } catch (e) { toast('Fehler', 'Export nicht moeglich. Nutze den Spielstand-Code.'); }
+  }
+  function importText(txt) {
+    txt = (txt || '').trim();
+    var s = null;
+    try { s = G.deserialize(txt); } catch (e) {
+      try { s = G.deserialize(decodeURIComponent(escape(atob(txt)))); } catch (e2) { s = null; }
+    }
+    return s;
+  }
+  function applyLoaded(s) {
+    S = s; A.music = S.settings.music; A.sfxOn = S.settings.sfx; closeAllPanels(); enterFloor(s.floor); mode = 'world'; save();
+    $('title').classList.remove('on');
+    toast('Geladen', 'Spielstand wiederhergestellt: Etage ' + (s.floor + 1) + '.');
+  }
+  function importFile() {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.json,application/json,text/plain';
+    inp.style.display = 'none';
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var s = importText(rd.result);
+        if (s) applyLoaded(s); else toast('Fehler', 'Diese Datei ist kein gueltiger Spielstand.');
+        inp.remove();
+      };
+      rd.readAsText(f);
+    });
+    document.body.appendChild(inp);
+    inp.click();
+  }
+  G.debugSave = { exportFile: function () { exportFile(); }, importText: importText, loadBestSave: loadBestSave, applyLoaded: function (s) { applyLoaded(s); } };
   function packSeen() {
     if (!SEEN) return '';
     var out = '', b = 0, n = 0;
@@ -2470,6 +2562,10 @@ window.G = window.G || {}; window.G.ZZFX = ZZFX;})();</script>
     panel('Optionen', function (body) {
       body.appendChild(btn('Musik: ' + (A.music ? 'an' : 'aus'), function () { S.settings.music = A.music ? 0 : 1; A.setMusic(S.settings.music); if (A.music) playAreaMusic(); save(); refreshPanel(); }, 'wide'));
       body.appendChild(btn('Effekte: ' + (A.sfxOn ? 'an' : 'aus'), function () { S.settings.sfx = A.sfxOn ? 0 : 1; A.sfxOn = S.settings.sfx; save(); refreshPanel(); }, 'wide'));
+      body.appendChild(h('p', { 'class': 'small' }, ['Automatisch gespeichert' + (S.savedAt ? ' zuletzt um ' + new Date(S.savedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '') + '. Fuer eine Sicherung ausserhalb der App:']));
+      body.appendChild(btn('Jetzt speichern', function () { save(); toast('Gespeichert', 'Spielstand ist auf diesem Geraet gesichert.'); refreshPanel(); }, 'wide'));
+      body.appendChild(btn('Spielstand als Datei sichern', exportFile, 'wide'));
+      body.appendChild(btn('Spielstand aus Datei laden', importFile, 'wide'));
       body.appendChild(btn('Spielstand-Code anzeigen', function () {
         save();
         panel('Spielstand-Code', function (b) {
@@ -2484,8 +2580,8 @@ window.G = window.G || {}; window.G.ZZFX = ZZFX;})();</script>
         panel('Code laden', function (b) {
           var ta = h('textarea'); b.appendChild(ta);
           b.appendChild(btn('Laden', function () {
-            try { var s = G.deserialize(decodeURIComponent(escape(atob(ta.value.trim())))); S = s; closeAllPanels(); S.pos = s.pos; enterFloor(s.floor); mode = 'world'; save(); toast('Geladen', 'Spielstand wiederhergestellt.'); }
-            catch (e) { toast('Fehler', 'Der Code ist ungueltig.'); }
+            var s = importText(ta.value);
+            if (s) applyLoaded(s); else toast('Fehler', 'Der Code ist ungueltig.');
           }, 'wide'));
         });
       }, 'wide'));
@@ -2574,7 +2670,14 @@ window.G = window.G || {}; window.G.ZZFX = ZZFX;})();</script>
     toast('Willkommen zurueck', 'Etage ' + (S.floor + 1) + ', ' + S.team.length + ' Biester im Team.');
   }
   function title() {
-    var s = loadSave();
+    renderTitle(loadSave());
+    loadBestSave().then(function (best) {
+      if (!$('title').classList.contains('on')) return;
+      var cur = loadSave();
+      if (best && (!cur || (best.savedAt || 0) > (cur.savedAt || 0))) renderTitle(best);
+    });
+  }
+  function renderTitle(s) {
     var t = $('title'), b = $('titlebtns'); b.innerHTML = '';
     if (s) b.appendChild(btn('Weiterspielen', function () { A.init(); continueGame(s); }, 'wide big'));
     b.appendChild(btn('Neues Spiel', function () {
@@ -2582,6 +2685,7 @@ window.G = window.G || {}; window.G.ZZFX = ZZFX;})();</script>
       if (s) choice('Neues Spiel starten? Der vorhandene Spielstand wird ueberschrieben.', ['Ja', 'Abbrechen'], function (i) { if (i === 0) newGame(); });
       else newGame();
     }, 'wide big' + (s ? ' gray' : '')));
+    b.appendChild(btn('Spielstand aus Datei laden', function () { A.init(); importFile(); }, 'wide gray'));
     t.classList.add('on');
     var c = $('titlecv'), x = c.getContext('2d');
     var ids = ['feuerbaron', 'admiralotter', 'wurzelfuerstin', 'hackerratte', 'safeknacker', 'phantomkatze'];
@@ -2637,6 +2741,8 @@ window.G = window.G || {}; window.G.ZZFX = ZZFX;})();</script>
 
   G.boot = function () {
     tapShim();
+    // Bittet iOS, den Speicher dieser App nicht automatisch zu leeren
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
     resize(); bindInput(); title();
     requestAnimationFrame(loop);
   };
